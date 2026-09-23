@@ -3,6 +3,7 @@ import { createLoop } from './engine/loop.js';
 import { createInput } from './engine/input.js';
 import { Camera } from './engine/camera.js';
 import { Player } from './entities/player.js';
+import { Enemy, separate } from './entities/enemy.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -15,6 +16,17 @@ const input = createInput();
 const player = new Player(world.width / 2, world.height / 2);
 const camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
 
+// Пока враги расставлены руками, кольцом вокруг точки старта.
+// Спавнер по краям экрана появится на следующем шаге.
+const enemies = [200, 340, 90].map((degrees) => {
+  const angle = (degrees * Math.PI) / 180;
+  const distance = 420;
+  return new Enemy(
+    player.x + Math.cos(angle) * distance,
+    player.y + Math.sin(angle) * distance,
+  );
+});
+
 camera.snapTo(player);
 
 let elapsed = 0;
@@ -22,6 +34,10 @@ let elapsed = 0;
 function update(dt) {
   elapsed += dt;
   player.update(dt, input, world);
+
+  for (const enemy of enemies) enemy.update(dt, player);
+  separate(enemies);
+
   camera.follow(player, dt);
 }
 
@@ -34,6 +50,7 @@ function render() {
   camera.apply(ctx);
 
   drawWorld();
+  for (const enemy of enemies) enemy.draw(ctx);
   player.draw(ctx);
 
   ctx.restore();
@@ -92,6 +109,7 @@ function drawHud() {
   ctx.font = '14px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 26);
   ctx.fillText(`X: ${Math.round(player.x)}  Y: ${Math.round(player.y)}`, 16, 46);
+  ctx.fillText(`Врагов: ${enemies.length}`, 16, 66);
 
   drawMinimap();
   ctx.restore();
@@ -119,6 +137,13 @@ function drawMinimap() {
     canvas.width * scale,
     canvas.height * scale,
   );
+
+  ctx.fillStyle = CONFIG.colors.enemy;
+  for (const enemy of enemies) {
+    ctx.beginPath();
+    ctx.arc(x + enemy.x * scale, y + enemy.y * scale, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.fillStyle = CONFIG.colors.player;
   ctx.beginPath();

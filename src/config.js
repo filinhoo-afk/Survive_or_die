@@ -15,11 +15,19 @@ export const CONFIG = {
     border: '#31405e',
     player: '#7ee787',
     playerOutline: '#0b0e14',
+    enemy: '#f2786a',
     hud: '#6e7681',
   },
   player: {
     radius: 14,
     speed: 230, // пикселей в секунду
+  },
+  enemy: {
+    radius: 13,
+    /** Медленнее игрока: убежать можно, отдохнуть — нет. */
+    speed: 105,
+    color: '#f2786a',
+    outline: '#2a100d',
   },
   camera: {
     /** Чем больше, тем жёстче камера держится за игрока. */

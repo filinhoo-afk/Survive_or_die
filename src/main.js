@@ -3,7 +3,8 @@ import { createLoop } from './engine/loop.js';
 import { createInput } from './engine/input.js';
 import { Camera } from './engine/camera.js';
 import { Player } from './entities/player.js';
-import { Enemy, separate } from './entities/enemy.js';
+import { separate } from './entities/enemy.js';
+import { Spawner } from './systems/spawner.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -16,16 +17,11 @@ const input = createInput();
 const player = new Player(world.width / 2, world.height / 2);
 const camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
 
-// Пока враги расставлены руками, кольцом вокруг точки старта.
-// Спавнер по краям экрана появится на следующем шаге.
-const enemies = [200, 340, 90].map((degrees) => {
-  const angle = (degrees * Math.PI) / 180;
-  const distance = 420;
-  return new Enemy(
-    player.x + Math.cos(angle) * distance,
-    player.y + Math.sin(angle) * distance,
-  );
-});
+const enemies = [];
+const spawner = new Spawner(world);
+
+// Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
+spawner.spawnWave(enemies, camera);
 
 camera.snapTo(player);
 
@@ -34,6 +30,8 @@ let elapsed = 0;
 function update(dt) {
   elapsed += dt;
   player.update(dt, input, world);
+
+  spawner.update(dt, enemies, camera);
 
   for (const enemy of enemies) enemy.update(dt, player);
   separate(enemies);
@@ -110,6 +108,11 @@ function drawHud() {
   ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 26);
   ctx.fillText(`X: ${Math.round(player.x)}  Y: ${Math.round(player.y)}`, 16, 46);
   ctx.fillText(`Врагов: ${enemies.length}`, 16, 66);
+  ctx.fillText(
+    `Волна ${spawner.wave} · следующая через ${spawner.timeToNextWave.toFixed(1)} с`,
+    16,
+    86,
+  );
 
   drawMinimap();
   ctx.restore();

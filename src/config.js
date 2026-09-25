@@ -16,11 +16,20 @@ export const CONFIG = {
     player: '#7ee787',
     playerOutline: '#0b0e14',
     enemy: '#f2786a',
+    hpBar: '#7ee787',
+    hpBarLow: '#f2c14e',
+    hpBarCritical: '#f2786a',
+    hpBarBack: '#20283a',
     hud: '#6e7681',
   },
   player: {
     radius: 14,
     speed: 230, // пикселей в секунду
+    maxHp: 100,
+    /** Секунд неуязвимости после удара: без неё толпа снимает всё за миг. */
+    invulnerability: 0.8,
+    /** Период мигания во время неуязвимости, секунды. */
+    blinkPeriod: 0.12,
   },
   enemy: {
     radius: 13,
@@ -28,6 +37,7 @@ export const CONFIG = {
     speed: 105,
     color: '#f2786a',
     outline: '#2a100d',
+    damage: 12,
   },
   spawner: {
     /** Секунд между волнами. */

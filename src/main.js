@@ -5,6 +5,7 @@ import { Camera } from './engine/camera.js';
 import { Player } from './entities/player.js';
 import { separate } from './entities/enemy.js';
 import { Spawner } from './systems/spawner.js';
+import { applyContactDamage } from './systems/damage.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -28,6 +29,9 @@ camera.snapTo(player);
 let elapsed = 0;
 
 function update(dt) {
+  // После смерти мир замирает: таймер, волны и враги останавливаются.
+  if (!player.alive) return;
+
   elapsed += dt;
   player.update(dt, input, world);
 
@@ -35,6 +39,7 @@ function update(dt) {
 
   for (const enemy of enemies) enemy.update(dt, player);
   separate(enemies);
+  applyContactDamage(player, enemies);
 
   camera.follow(player, dt);
 }
@@ -103,19 +108,72 @@ function drawGrid() {
 
 function drawHud() {
   ctx.save();
+
+  drawHealthBar();
+
   ctx.fillStyle = CONFIG.colors.hud;
   ctx.font = '14px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 26);
-  ctx.fillText(`X: ${Math.round(player.x)}  Y: ${Math.round(player.y)}`, 16, 46);
-  ctx.fillText(`Врагов: ${enemies.length}`, 16, 66);
+  ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 60);
+  ctx.fillText(`X: ${Math.round(player.x)}  Y: ${Math.round(player.y)}`, 16, 80);
+  ctx.fillText(`Врагов: ${enemies.length}`, 16, 100);
   ctx.fillText(
     `Волна ${spawner.wave} · следующая через ${spawner.timeToNextWave.toFixed(1)} с`,
     16,
-    86,
+    120,
   );
 
   drawMinimap();
+  if (!player.alive) drawDefeat();
+
   ctx.restore();
+}
+
+function drawHealthBar() {
+  const x = 16;
+  const y = 16;
+  const width = 220;
+  const height = 16;
+  const ratio = player.hpRatio;
+
+  ctx.fillStyle = CONFIG.colors.hpBarBack;
+  ctx.fillRect(x, y, width, height);
+
+  ctx.fillStyle =
+    ratio > 0.5
+      ? CONFIG.colors.hpBar
+      : ratio > 0.25
+        ? CONFIG.colors.hpBarLow
+        : CONFIG.colors.hpBarCritical;
+  ctx.fillRect(x, y, width * ratio, height);
+
+  ctx.strokeStyle = CONFIG.colors.border;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
+
+  ctx.fillStyle = CONFIG.colors.hud;
+  ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(`${Math.ceil(player.hp)} / ${player.maxHp}`, x + width + 12, y + 13);
+}
+
+function drawDefeat() {
+  ctx.fillStyle = 'rgba(8, 10, 16, 0.65)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.textAlign = 'center';
+
+  ctx.fillStyle = CONFIG.colors.enemy;
+  ctx.font = 'bold 36px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('Вы погибли', canvas.width / 2, canvas.height / 2);
+
+  ctx.fillStyle = CONFIG.colors.hud;
+  ctx.font = '15px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(
+    `Продержались ${elapsed.toFixed(1)} с · обновите страницу, чтобы начать заново`,
+    canvas.width / 2,
+    canvas.height / 2 + 32,
+  );
+
+  ctx.textAlign = 'left';
 }
 
 /** Миникарта в углу: где игрок и куда смотрит камера. */

@@ -16,6 +16,8 @@ export const CONFIG = {
     player: '#7ee787',
     playerOutline: '#0b0e14',
     enemy: '#f2786a',
+    projectile: '#9ad8ff',
+    projectileTrail: 'rgba(154, 216, 255, 0.3)',
     hpBar: '#7ee787',
     hpBarLow: '#f2c14e',
     hpBarCritical: '#f2786a',
@@ -38,6 +40,19 @@ export const CONFIG = {
     color: '#f2786a',
     outline: '#2a100d',
     damage: 12,
+  },
+  weapon: {
+    /** Секунд между выстрелами. */
+    cooldown: 0.55,
+    /** Дальше этого расстояния цель не берётся. */
+    range: 430,
+    damage: 20,
+  },
+  projectile: {
+    radius: 5,
+    speed: 540,
+    /** Секунд жизни, если ни во что не попал. */
+    lifetime: 1.4,
   },
   spawner: {
     /** Секунд между волнами. */

@@ -6,6 +6,7 @@ import { Player } from './entities/player.js';
 import { separate } from './entities/enemy.js';
 import { Spawner } from './systems/spawner.js';
 import { applyContactDamage } from './systems/damage.js';
+import { AutoCannon, pruneProjectiles } from './systems/weapons.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -19,7 +20,9 @@ const player = new Player(world.width / 2, world.height / 2);
 const camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
 
 const enemies = [];
+const projectiles = [];
 const spawner = new Spawner(world);
+const cannon = new AutoCannon();
 
 // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
 spawner.spawnWave(enemies, camera);
@@ -41,6 +44,10 @@ function update(dt) {
   separate(enemies);
   applyContactDamage(player, enemies);
 
+  cannon.update(dt, player, enemies, projectiles);
+  for (const shot of projectiles) shot.update(dt);
+  pruneProjectiles(projectiles, world);
+
   camera.follow(player, dt);
 }
 
@@ -54,6 +61,7 @@ function render() {
 
   drawWorld();
   for (const enemy of enemies) enemy.draw(ctx);
+  for (const shot of projectiles) shot.draw(ctx);
   player.draw(ctx);
 
   ctx.restore();
@@ -115,7 +123,7 @@ function drawHud() {
   ctx.font = '14px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 60);
   ctx.fillText(`X: ${Math.round(player.x)}  Y: ${Math.round(player.y)}`, 16, 80);
-  ctx.fillText(`Врагов: ${enemies.length}`, 16, 100);
+  ctx.fillText(`Врагов: ${enemies.length} · снарядов: ${projectiles.length}`, 16, 100);
   ctx.fillText(
     `Волна ${spawner.wave} · следующая через ${spawner.timeToNextWave.toFixed(1)} с`,
     16,

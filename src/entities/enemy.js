@@ -7,6 +7,7 @@ export class Enemy {
     this.y = y;
     this.radius = CONFIG.enemy.radius;
     this.speed = CONFIG.enemy.speed;
+    this.damage = CONFIG.enemy.damage;
     this.angle = 0;
   }
 

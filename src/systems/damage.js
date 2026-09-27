@@ -19,3 +19,47 @@ export function applyContactDamage(player, enemies) {
 
   return null;
 }
+
+/**
+ * Попадания снарядов во врагов. Снаряд тратится на первом же враге.
+ *
+ * Пролететь врага насквозь между кадрами снаряд не может: за шаг физики
+ * он смещается на 540 / 60 = 9 пикселей, а зона попадания — 18.
+ *
+ * @returns {Array} враги, убитые в этом кадре, — для эффектов смерти
+ */
+export function resolveProjectileHits(projectiles, enemies) {
+  const killed = [];
+
+  for (const shot of projectiles) {
+    if (shot.expired) continue;
+
+    for (const enemy of enemies) {
+      if (!enemy.alive) continue;
+
+      const dx = enemy.x - shot.x;
+      const dy = enemy.y - shot.y;
+      const reach = enemy.radius + shot.radius;
+      if (dx * dx + dy * dy > reach * reach) continue;
+
+      const speed = Math.hypot(shot.vx, shot.vy) || 1;
+      if (enemy.takeHit(shot.damage, shot.vx / speed, shot.vy / speed)) {
+        killed.push(enemy);
+      }
+
+      shot.spent = true;
+      break;
+    }
+  }
+
+  return killed;
+}
+
+/** Убирает мёртвых врагов заменой последним, как и снаряды. */
+export function removeDead(enemies) {
+  for (let i = enemies.length - 1; i >= 0; i -= 1) {
+    if (enemies[i].alive) continue;
+    enemies[i] = enemies[enemies.length - 1];
+    enemies.pop();
+  }
+}

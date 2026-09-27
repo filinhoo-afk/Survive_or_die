@@ -5,7 +5,12 @@ import { Camera } from './engine/camera.js';
 import { Player } from './entities/player.js';
 import { separate } from './entities/enemy.js';
 import { Spawner } from './systems/spawner.js';
-import { applyContactDamage } from './systems/damage.js';
+import {
+  applyContactDamage,
+  removeDead,
+  resolveProjectileHits,
+} from './systems/damage.js';
+import { Effects } from './systems/effects.js';
 import { AutoCannon, pruneProjectiles } from './systems/weapons.js';
 
 const canvas = document.getElementById('game');
@@ -23,6 +28,7 @@ const enemies = [];
 const projectiles = [];
 const spawner = new Spawner(world);
 const cannon = new AutoCannon();
+const effects = new Effects();
 
 // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
 spawner.spawnWave(enemies, camera);
@@ -46,7 +52,13 @@ function update(dt) {
 
   cannon.update(dt, player, enemies, projectiles);
   for (const shot of projectiles) shot.update(dt);
+
+  const killed = resolveProjectileHits(projectiles, enemies);
+  for (const enemy of killed) effects.deathBurst(enemy.x, enemy.y, CONFIG.enemy.color);
+
+  removeDead(enemies);
   pruneProjectiles(projectiles, world);
+  effects.update(dt);
 
   camera.follow(player, dt);
 }
@@ -61,6 +73,7 @@ function render() {
 
   drawWorld();
   for (const enemy of enemies) enemy.draw(ctx);
+  effects.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
   player.draw(ctx);
 

@@ -16,6 +16,7 @@ export const CONFIG = {
     player: '#7ee787',
     playerOutline: '#0b0e14',
     enemy: '#f2786a',
+    enemyFlash: '#ffffff',
     projectile: '#9ad8ff',
     projectileTrail: 'rgba(154, 216, 255, 0.3)',
     hpBar: '#7ee787',
@@ -40,6 +41,17 @@ export const CONFIG = {
     color: '#f2786a',
     outline: '#2a100d',
     damage: 12,
+    /** Два попадания стартовой пушки. */
+    hp: 40,
+    /** На сколько пикселей отбрасывает попадание. */
+    knockback: 9,
+    /** Секунд белой вспышки после попадания. */
+    hitFlash: 0.08,
+  },
+  effects: {
+    /** Секунд живёт кольцо на месте смерти врага. */
+    deathLife: 0.28,
+    deathRadius: 20,
   },
   weapon: {
     /** Секунд между выстрелами. */

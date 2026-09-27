@@ -9,9 +9,33 @@ export class Enemy {
     this.speed = CONFIG.enemy.speed;
     this.damage = CONFIG.enemy.damage;
     this.angle = 0;
+
+    this.maxHp = CONFIG.enemy.hp;
+    this.hp = this.maxHp;
+    this.alive = true;
+    /** Сколько секунд ещё гореть белым после попадания. */
+    this.flashFor = 0;
+  }
+
+  /**
+   * Попадание: урон, вспышка и отброс по направлению удара.
+   * @returns {boolean} убит ли враг этим попаданием
+   */
+  takeHit(amount, directionX, directionY) {
+    if (!this.alive) return false;
+
+    this.hp = Math.max(0, this.hp - amount);
+    this.flashFor = CONFIG.enemy.hitFlash;
+    this.x += directionX * CONFIG.enemy.knockback;
+    this.y += directionY * CONFIG.enemy.knockback;
+
+    if (this.hp === 0) this.alive = false;
+    return !this.alive;
   }
 
   update(dt, target) {
+    if (this.flashFor > 0) this.flashFor = Math.max(0, this.flashFor - dt);
+
     const dx = target.x - this.x;
     const dy = target.y - this.y;
     const distance = Math.hypot(dx, dy);
@@ -37,7 +61,7 @@ export class Enemy {
     ctx.lineTo(0, -this.radius * 0.8);
     ctx.closePath();
 
-    ctx.fillStyle = CONFIG.enemy.color;
+    ctx.fillStyle = this.flashFor > 0 ? CONFIG.colors.enemyFlash : CONFIG.enemy.color;
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = CONFIG.enemy.outline;

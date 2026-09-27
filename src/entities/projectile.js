@@ -9,6 +9,8 @@ export class Projectile {
     this.damage = damage;
     this.age = 0;
     this.lifetime = CONFIG.projectile.lifetime;
+    /** Снаряд уже во что-то попал и должен исчезнуть. */
+    this.spent = false;
 
     const speed = CONFIG.projectile.speed;
     this.vx = directionX * speed;
@@ -16,7 +18,7 @@ export class Projectile {
   }
 
   get expired() {
-    return this.age >= this.lifetime;
+    return this.spent || this.age >= this.lifetime;
   }
 
   update(dt) {

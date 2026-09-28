@@ -11,6 +11,8 @@ import {
   resolveProjectileHits,
 } from './systems/damage.js';
 import { Effects } from './systems/effects.js';
+import { Gem } from './entities/gem.js';
+import { updateGems } from './systems/pickups.js';
 import { AutoCannon, pruneProjectiles } from './systems/weapons.js';
 
 const canvas = document.getElementById('game');
@@ -26,6 +28,7 @@ const camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoo
 
 const enemies = [];
 const projectiles = [];
+const gems = [];
 const spawner = new Spawner(world);
 const cannon = new AutoCannon();
 const effects = new Effects();
@@ -54,7 +57,15 @@ function update(dt) {
   for (const shot of projectiles) shot.update(dt);
 
   const killed = resolveProjectileHits(projectiles, enemies);
-  for (const enemy of killed) effects.deathBurst(enemy.x, enemy.y, CONFIG.enemy.color);
+  for (const enemy of killed) {
+    effects.deathBurst(enemy.x, enemy.y, CONFIG.enemy.color);
+    gems.push(new Gem(enemy.x, enemy.y, CONFIG.enemy.xp));
+  }
+
+  const levelsGained = player.gainXp(updateGems(gems, player, dt));
+  for (let i = 0; i < levelsGained; i += 1) {
+    effects.levelUp(player.x, player.y, player.level - levelsGained + i + 1);
+  }
 
   removeDead(enemies);
   pruneProjectiles(projectiles, world);
@@ -72,6 +83,7 @@ function render() {
   camera.apply(ctx);
 
   drawWorld();
+  for (const gem of gems) gem.draw(ctx);
   for (const enemy of enemies) enemy.draw(ctx);
   effects.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
@@ -132,11 +144,17 @@ function drawHud() {
 
   drawHealthBar();
 
+  drawXpBar();
+
   ctx.fillStyle = CONFIG.colors.hud;
   ctx.font = '14px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 60);
-  ctx.fillText(`X: ${Math.round(player.x)}  Y: ${Math.round(player.y)}`, 16, 80);
-  ctx.fillText(`Врагов: ${enemies.length} · снарядов: ${projectiles.length}`, 16, 100);
+  ctx.fillText(
+    `Уровень ${player.level} · опыт ${player.xp} / ${player.xpToNext}`,
+    16,
+    60,
+  );
+  ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 80);
+  ctx.fillText(`Врагов: ${enemies.length} · кристаллов: ${gems.length}`, 16, 100);
   ctx.fillText(
     `Волна ${spawner.wave} · следующая через ${spawner.timeToNextWave.toFixed(1)} с`,
     16,
@@ -147,6 +165,15 @@ function drawHud() {
   if (!player.alive) drawDefeat();
 
   ctx.restore();
+}
+
+/** Полоса опыта во всю ширину по верхнему краю экрана. */
+function drawXpBar() {
+  const height = 6;
+  ctx.fillStyle = CONFIG.colors.hpBarBack;
+  ctx.fillRect(0, 0, canvas.width, height);
+  ctx.fillStyle = CONFIG.colors.xpBar;
+  ctx.fillRect(0, 0, canvas.width * player.xpRatio, height);
 }
 
 function drawHealthBar() {

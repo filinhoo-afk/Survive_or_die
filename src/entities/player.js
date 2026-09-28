@@ -1,5 +1,10 @@
 import { CONFIG } from '../config.js';
 
+/** Сколько опыта нужно, чтобы уйти с уровня level на следующий. */
+export function xpForLevel(level) {
+  return CONFIG.xp.base + (level - 1) * CONFIG.xp.step;
+}
+
 export class Player {
   constructor(x, y) {
     this.x = x;
@@ -16,10 +21,37 @@ export class Player {
     this.invulnerableFor = 0;
     /** Копится только во время неуязвимости — по нему считается мигание. */
     this.blinkClock = 0;
+
+    this.level = 1;
+    this.xp = 0;
+    this.xpToNext = xpForLevel(1);
   }
 
   get hpRatio() {
     return this.hp / this.maxHp;
+  }
+
+  get xpRatio() {
+    return this.xp / this.xpToNext;
+  }
+
+  /**
+   * Добавляет опыт; остаток переносится на следующий уровень.
+   * @returns {number} сколько уровней получено разом
+   */
+  gainXp(amount) {
+    this.xp += amount;
+    let gained = 0;
+
+    // while, а не if: крупная порция опыта может дать несколько уровней.
+    while (this.xp >= this.xpToNext) {
+      this.xp -= this.xpToNext;
+      this.level += 1;
+      this.xpToNext = xpForLevel(this.level);
+      gained += 1;
+    }
+
+    return gained;
   }
 
   update(dt, input, bounds) {

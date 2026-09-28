@@ -17,6 +17,11 @@ export const CONFIG = {
     playerOutline: '#0b0e14',
     enemy: '#f2786a',
     enemyFlash: '#ffffff',
+    gem: '#a78bfa',
+    gemLight: '#e4dcff',
+    gemOutline: '#1d1240',
+    xpBar: '#a78bfa',
+    levelUp: '#7ee787',
     projectile: '#9ad8ff',
     projectileTrail: 'rgba(154, 216, 255, 0.3)',
     hpBar: '#7ee787',
@@ -47,11 +52,28 @@ export const CONFIG = {
     knockback: 9,
     /** Секунд белой вспышки после попадания. */
     hitFlash: 0.08,
+    /** Сколько опыта в выпавшем кристалле. */
+    xp: 1,
+  },
+  xp: {
+    /** Опыта до второго уровня; каждый следующий дороже на step. */
+    base: 5,
+    step: 5,
+    /** С этого расстояния кристалл начинает лететь к игроку. */
+    magnetRadius: 110,
+    /** Ускорение притянутого кристалла, пикселей в секунду за секунду. */
+    pullAcceleration: 1400,
+    maxPullSpeed: 900,
+  },
+  gem: {
+    radius: 5,
   },
   effects: {
     /** Секунд живёт кольцо на месте смерти врага. */
     deathLife: 0.28,
     deathRadius: 20,
+    levelUpLife: 0.7,
+    levelUpRadius: 90,
   },
   weapon: {
     /** Секунд между выстрелами. */

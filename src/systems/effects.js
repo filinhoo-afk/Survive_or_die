@@ -1,8 +1,8 @@
 import { CONFIG } from '../config.js';
 
 /**
- * Короткоживущие визуальные эффекты, не влияющие на игру.
- * Пока здесь только кольцо на месте смерти врага.
+ * Короткоживущие визуальные эффекты, не влияющие на игру:
+ * смерть врага, повышение уровня, всплывающие надписи.
  */
 export class Effects {
   constructor() {
@@ -11,12 +11,36 @@ export class Effects {
 
   deathBurst(x, y, color) {
     this.items.push({
+      kind: 'burst',
       x,
       y,
       color,
       age: 0,
       life: CONFIG.effects.deathLife,
       radius: CONFIG.effects.deathRadius,
+    });
+  }
+
+  /** Волна от игрока и надпись с новым уровнем. */
+  levelUp(x, y, level) {
+    const life = CONFIG.effects.levelUpLife;
+    this.items.push({
+      kind: 'ring',
+      x,
+      y,
+      color: CONFIG.colors.levelUp,
+      age: 0,
+      life,
+      radius: CONFIG.effects.levelUpRadius,
+    });
+    this.items.push({
+      kind: 'text',
+      x,
+      y: y - 30,
+      text: `Уровень ${level}`,
+      color: CONFIG.colors.levelUp,
+      age: 0,
+      life: life * 1.6,
     });
   }
 
@@ -35,24 +59,53 @@ export class Effects {
 
     for (const item of this.items) {
       const t = item.age / item.life;
-
-      // Первые мгновения — белая вспышка, потом расходящееся гаснущее кольцо.
-      if (t < 0.35) {
-        ctx.globalAlpha = 1 - t / 0.35;
-        ctx.fillStyle = CONFIG.colors.enemyFlash;
-        ctx.beginPath();
-        ctx.arc(item.x, item.y, item.radius * 0.55, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.globalAlpha = 1 - t;
-      ctx.strokeStyle = item.color;
-      ctx.lineWidth = 1 + 3 * (1 - t);
-      ctx.beginPath();
-      ctx.arc(item.x, item.y, item.radius * (0.4 + 0.6 * t), 0, Math.PI * 2);
-      ctx.stroke();
+      if (item.kind === 'burst') drawBurst(ctx, item, t);
+      else if (item.kind === 'ring') drawRing(ctx, item, t);
+      else drawText(ctx, item, t);
     }
 
     ctx.restore();
   }
+}
+
+/** Смерть врага: сначала белая вспышка, потом гаснущее кольцо. */
+function drawBurst(ctx, item, t) {
+  if (t < 0.35) {
+    ctx.globalAlpha = 1 - t / 0.35;
+    ctx.fillStyle = CONFIG.colors.enemyFlash;
+    ctx.beginPath();
+    ctx.arc(item.x, item.y, item.radius * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1 - t;
+  ctx.strokeStyle = item.color;
+  ctx.lineWidth = 1 + 3 * (1 - t);
+  ctx.beginPath();
+  ctx.arc(item.x, item.y, item.radius * (0.4 + 0.6 * t), 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/** Кольцо уровня быстро разлетается и медленно гаснет. */
+function drawRing(ctx, item, t) {
+  const eased = 1 - (1 - t) ** 3;
+  ctx.globalAlpha = 1 - t;
+  ctx.strokeStyle = item.color;
+  ctx.lineWidth = 2 + 6 * (1 - t);
+  ctx.beginPath();
+  ctx.arc(item.x, item.y, item.radius * eased, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/** Надпись всплывает вверх и тает во второй половине жизни. */
+function drawText(ctx, item, t) {
+  ctx.globalAlpha = t < 0.5 ? 1 : 1 - (t - 0.5) * 2;
+  ctx.font = 'bold 18px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#0b0e14';
+  const y = item.y - 24 * t;
+  ctx.strokeText(item.text, item.x, y);
+  ctx.fillStyle = item.color;
+  ctx.fillText(item.text, item.x, y);
 }

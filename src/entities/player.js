@@ -25,6 +25,9 @@ export class Player {
     this.level = 1;
     this.xp = 0;
     this.xpToNext = xpForLevel(1);
+
+    /** Своё у каждого игрока, чтобы его можно было прокачивать. */
+    this.magnetRadius = CONFIG.xp.magnetRadius;
   }
 
   get hpRatio() {

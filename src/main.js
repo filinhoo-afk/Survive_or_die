@@ -13,6 +13,8 @@ import {
 import { Effects } from './systems/effects.js';
 import { Gem } from './entities/gem.js';
 import { updateGems } from './systems/pickups.js';
+import { UpgradeState } from './systems/upgrades.js';
+import { cardAt, drawUpgradeScreen } from './ui/upgradeScreen.js';
 import { AutoCannon, pruneProjectiles } from './systems/weapons.js';
 
 const canvas = document.getElementById('game');
@@ -32,6 +34,62 @@ const gems = [];
 const spawner = new Spawner(world);
 const cannon = new AutoCannon();
 const effects = new Effects();
+const upgrades = new UpgradeState();
+const targets = { player, cannon };
+
+/** Сколько повышений ещё не разыграно — за раз их может прийти несколько. */
+let pendingLevels = 0;
+/** Карточки на экране выбора; пока не null, мир стоит на паузе. */
+let offers = null;
+let hoveredCard = -1;
+
+function openChoice() {
+  offers = upgrades.roll(3);
+  hoveredCard = -1;
+  // Всё прокачано до упора — выбирать не из чего, играем дальше.
+  if (offers.length === 0) {
+    offers = null;
+    pendingLevels = 0;
+  }
+}
+
+function pickCard(index) {
+  if (!offers || index < 0 || index >= offers.length) return;
+  upgrades.take(offers[index], targets);
+  pendingLevels -= 1;
+  offers = null;
+  if (pendingLevels > 0) openChoice();
+}
+
+const CHOICE_KEYS = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 };
+
+window.addEventListener('keydown', (event) => {
+  if (!offers || !(event.code in CHOICE_KEYS)) return;
+  pickCard(CHOICE_KEYS[event.code]);
+});
+
+/** Канвас растягивается стилями, поэтому переводим координаты мыши в его пиксели. */
+function canvasPoint(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: ((event.clientX - rect.left) * canvas.width) / rect.width,
+    y: ((event.clientY - rect.top) * canvas.height) / rect.height,
+  };
+}
+
+canvas.addEventListener('mousemove', (event) => {
+  if (!offers) return;
+  const { x, y } = canvasPoint(event);
+  hoveredCard = cardAt(x, y, offers.length, canvas);
+  canvas.style.cursor = hoveredCard >= 0 ? 'pointer' : 'default';
+});
+
+canvas.addEventListener('click', (event) => {
+  if (!offers) return;
+  const { x, y } = canvasPoint(event);
+  pickCard(cardAt(x, y, offers.length, canvas));
+  canvas.style.cursor = 'default';
+});
 
 // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
 spawner.spawnWave(enemies, camera);
@@ -41,8 +99,8 @@ camera.snapTo(player);
 let elapsed = 0;
 
 function update(dt) {
-  // После смерти мир замирает: таймер, волны и враги останавливаются.
-  if (!player.alive) return;
+  // После смерти и на экране выбора мир замирает целиком.
+  if (!player.alive || offers) return;
 
   elapsed += dt;
   player.update(dt, input, world);
@@ -66,6 +124,8 @@ function update(dt) {
   for (let i = 0; i < levelsGained; i += 1) {
     effects.levelUp(player.x, player.y, player.level - levelsGained + i + 1);
   }
+  pendingLevels += levelsGained;
+  if (pendingLevels > 0 && player.alive) openChoice();
 
   removeDead(enemies);
   pruneProjectiles(projectiles, world);
@@ -161,8 +221,23 @@ function drawHud() {
     120,
   );
 
+  const taken = upgrades.summary();
+  if (taken) {
+    ctx.fillStyle = CONFIG.colors.hud;
+    ctx.fillText(taken, 16, 140);
+  }
+
   drawMinimap();
   if (!player.alive) drawDefeat();
+  if (offers) {
+    drawUpgradeScreen(ctx, canvas, {
+      offers,
+      hovered: hoveredCard,
+      targets,
+      state: upgrades,
+      level: player.level - pendingLevels + 1,
+    });
+  }
 
   ctx.restore();
 }

@@ -26,7 +26,7 @@ export class Gem {
 
     // Раз притянутый кристалл уже не отпускает, даже если игрок отбежал:
     // иначе он повиснет на полпути и будет раздражать.
-    if (!this.pulled && distance < CONFIG.xp.magnetRadius) this.pulled = true;
+    if (!this.pulled && distance < player.magnetRadius) this.pulled = true;
 
     if (this.pulled && distance > 0) {
       this.speed = Math.min(

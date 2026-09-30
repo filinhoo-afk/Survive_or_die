@@ -24,6 +24,9 @@ export const CONFIG = {
     levelUp: '#7ee787',
     projectile: '#9ad8ff',
     projectileTrail: 'rgba(154, 216, 255, 0.3)',
+    knife: '#e6f1ff',
+    knifeEdge: '#9fb3c8',
+    knifeHandle: '#8a5a34',
     hpBar: '#7ee787',
     hpBarLow: '#f2c14e',
     hpBarCritical: '#f2786a',
@@ -75,18 +78,17 @@ export const CONFIG = {
     levelUpLife: 0.7,
     levelUpRadius: 90,
   },
-  weapon: {
-    /** Секунд между выстрелами. */
-    cooldown: 0.55,
-    /** Дальше этого расстояния цель не берётся. */
-    range: 430,
-    damage: 20,
+  arsenal: {
+    /** Больше оружия одновременно носить нельзя. */
+    maxWeapons: 6,
   },
   projectile: {
+    /** Значения по умолчанию; каждое оружие задаёт свои. */
     radius: 5,
     speed: 540,
     /** Секунд жизни, если ни во что не попал. */
     lifetime: 1.4,
+    damage: 20,
   },
   spawner: {
     /** Секунд между волнами. */

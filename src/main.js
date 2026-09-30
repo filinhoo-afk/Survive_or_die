@@ -15,7 +15,8 @@ import { Gem } from './entities/gem.js';
 import { updateGems } from './systems/pickups.js';
 import { UpgradeState } from './systems/upgrades.js';
 import { cardAt, drawUpgradeScreen } from './ui/upgradeScreen.js';
-import { AutoCannon, pruneProjectiles } from './systems/weapons.js';
+import { pruneProjectiles } from './systems/weapons.js';
+import { Arsenal } from './systems/arsenal.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -32,10 +33,10 @@ const enemies = [];
 const projectiles = [];
 const gems = [];
 const spawner = new Spawner(world);
-const cannon = new AutoCannon();
+const arsenal = new Arsenal();
+arsenal.add('cannon');
 const effects = new Effects();
-const upgrades = new UpgradeState();
-const targets = { player, cannon };
+const upgrades = new UpgradeState(arsenal, player);
 
 /** Сколько повышений ещё не разыграно — за раз их может прийти несколько. */
 let pendingLevels = 0;
@@ -55,7 +56,7 @@ function openChoice() {
 
 function pickCard(index) {
   if (!offers || index < 0 || index >= offers.length) return;
-  upgrades.take(offers[index], targets);
+  offers[index].apply();
   pendingLevels -= 1;
   offers = null;
   if (pendingLevels > 0) openChoice();
@@ -111,7 +112,7 @@ function update(dt) {
   separate(enemies);
   applyContactDamage(player, enemies);
 
-  cannon.update(dt, player, enemies, projectiles);
+  arsenal.update(dt, { player, enemies, projectiles });
   for (const shot of projectiles) shot.update(dt);
 
   const killed = resolveProjectileHits(projectiles, enemies);
@@ -233,8 +234,6 @@ function drawHud() {
     drawUpgradeScreen(ctx, canvas, {
       offers,
       hovered: hoveredCard,
-      targets,
-      state: upgrades,
       level: player.level - pendingLevels + 1,
     });
   }

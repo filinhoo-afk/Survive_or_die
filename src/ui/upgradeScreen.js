@@ -24,7 +24,7 @@ export function cardAt(x, y, count, canvas) {
   );
 }
 
-export function drawUpgradeScreen(ctx, canvas, { offers, hovered, targets, state, level }) {
+export function drawUpgradeScreen(ctx, canvas, { offers, hovered, level }) {
   ctx.save();
 
   ctx.fillStyle = 'rgba(8, 10, 16, 0.74)';
@@ -39,13 +39,13 @@ export function drawUpgradeScreen(ctx, canvas, { offers, hovered, targets, state
   ctx.fillText('Выбери улучшение: клавиши 1, 2, 3 или клик', canvas.width / 2, 130);
 
   cardRects(offers.length, canvas).forEach((rect, i) => {
-    drawCard(ctx, rect, offers[i], i, i === hovered, targets, state);
+    drawCard(ctx, rect, offers[i], i, i === hovered);
   });
 
   ctx.restore();
 }
 
-function drawCard(ctx, rect, upgrade, index, hovered, targets, state) {
+function drawCard(ctx, rect, card, index, hovered) {
   // Карточка под курсором приподнимается — сразу видно, что выберется.
   const y = rect.y - (hovered ? 6 : 0);
   const cx = rect.x + rect.width / 2;
@@ -55,7 +55,7 @@ function drawCard(ctx, rect, upgrade, index, hovered, targets, state) {
   ctx.fillStyle = hovered ? '#1d2537' : '#161c2b';
   ctx.fill();
   ctx.lineWidth = hovered ? 3 : 2;
-  ctx.strokeStyle = hovered ? upgrade.color : '#31405e';
+  ctx.strokeStyle = hovered ? card.color : '#31405e';
   ctx.stroke();
 
   ctx.beginPath();
@@ -71,24 +71,26 @@ function drawCard(ctx, rect, upgrade, index, hovered, targets, state) {
   ctx.arc(cx, y + 62, 28, 0, Math.PI * 2);
   ctx.fillStyle = '#0b0e14';
   ctx.fill();
-  drawIcon(ctx, upgrade.icon, cx, y + 62, upgrade.color);
+  drawIcon(ctx, card.icon, cx, y + 62, card.color);
 
   ctx.fillStyle = '#f5f7fb';
   ctx.font = `bold 20px ${FONT}`;
-  ctx.fillText(upgrade.title, cx, y + 122);
+  ctx.fillText(card.title, cx, y + 122);
 
-  const rank = state.rank(upgrade.id);
-  ctx.fillStyle = rank === 0 ? upgrade.color : '#8b98ab';
+  // Новое — цветом карточки, прокачка уже взятого — приглушённо.
+  ctx.fillStyle = card.badge.startsWith('новое') ? card.color : '#8b98ab';
   ctx.font = `13px ${FONT}`;
-  ctx.fillText(rank === 0 ? 'новое' : `ранг ${rank} → ${rank + 1}`, cx, y + 144);
+  ctx.fillText(card.badge, cx, y + 144);
 
   ctx.fillStyle = '#c9d1d9';
   ctx.font = `14px ${FONT}`;
-  wrapText(ctx, upgrade.text, rect.width - 36).forEach((line, i) => {
+  wrapText(ctx, card.text, rect.width - 36).forEach((line, i) => {
     ctx.fillText(line, cx, y + 176 + i * 19);
   });
 
-  const [before, after] = state.preview(upgrade, targets);
+  if (!card.preview) return;
+
+  const [before, after] = card.preview;
   ctx.font = `bold 18px ${FONT}`;
   const arrow = '  →  ';
   const full = before + arrow + after;
@@ -96,7 +98,7 @@ function drawCard(ctx, rect, upgrade, index, hovered, targets, state) {
   ctx.textAlign = 'left';
   ctx.fillStyle = '#8b98ab';
   ctx.fillText(before + arrow, startX, y + rect.height - 22);
-  ctx.fillStyle = upgrade.color;
+  ctx.fillStyle = card.color;
   ctx.fillText(after, startX + ctx.measureText(before + arrow).width, y + rect.height - 22);
   ctx.textAlign = 'center';
 }
@@ -139,6 +141,18 @@ function drawIcon(ctx, kind, x, y, color) {
     ctx.beginPath();
     ctx.arc(x + 5, y - 4, 8, 0, Math.PI * 2);
     ctx.fill();
+  } else if (kind === 'knife') {
+    ctx.translate(x, y);
+    ctx.rotate(-Math.PI / 4);
+    ctx.beginPath();
+    ctx.moveTo(18, 0);
+    ctx.lineTo(0, -5);
+    ctx.lineTo(-6, 0);
+    ctx.lineTo(0, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#8a5a34';
+    ctx.fillRect(-17, -2.5, 11, 5);
   } else if (kind === 'rate') {
     for (const dx of [-12, 0, 12]) {
       ctx.beginPath();

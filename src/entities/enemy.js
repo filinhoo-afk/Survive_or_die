@@ -19,15 +19,17 @@ export class Enemy {
 
   /**
    * Попадание: урон, вспышка и отброс по направлению удара.
+   * @param {number} [knockbackScale] доля обычного отброса — частые
+   *   слабые удары вроде ауры отбрасывают меньше, иначе выталкивают толпу
    * @returns {boolean} убит ли враг этим попаданием
    */
-  takeHit(amount, directionX, directionY) {
+  takeHit(amount, directionX, directionY, knockbackScale = 1) {
     if (!this.alive) return false;
 
     this.hp = Math.max(0, this.hp - amount);
     this.flashFor = CONFIG.enemy.hitFlash;
-    this.x += directionX * CONFIG.enemy.knockback;
-    this.y += directionY * CONFIG.enemy.knockback;
+    this.x += directionX * CONFIG.enemy.knockback * knockbackScale;
+    this.y += directionY * CONFIG.enemy.knockback * knockbackScale;
 
     if (this.hp === 0) this.alive = false;
     return !this.alive;

@@ -153,6 +153,29 @@ function drawIcon(ctx, kind, x, y, color) {
     ctx.fill();
     ctx.fillStyle = '#8a5a34';
     ctx.fillRect(-17, -2.5, 11, 5);
+  } else if (kind === 'orbit') {
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    for (const angle of [-0.6, Math.PI - 0.6]) {
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(angle) * 15, y + Math.sin(angle) * 15, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (kind === 'aura') {
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    ctx.arc(x, y, 17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
   } else if (kind === 'rate') {
     for (const dx of [-12, 0, 12]) {
       ctx.beginPath();

@@ -112,10 +112,12 @@ function update(dt) {
   separate(enemies);
   applyContactDamage(player, enemies);
 
-  arsenal.update(dt, { player, enemies, projectiles });
+  // Щит и аура убивают без снарядов — кладут жертв в тот же список.
+  const killed = [];
+  arsenal.update(dt, { player, enemies, projectiles, killed });
   for (const shot of projectiles) shot.update(dt);
+  killed.push(...resolveProjectileHits(projectiles, enemies));
 
-  const killed = resolveProjectileHits(projectiles, enemies);
   for (const enemy of killed) {
     effects.deathBurst(enemy.x, enemy.y, CONFIG.enemy.color);
     gems.push(new Gem(enemy.x, enemy.y, CONFIG.enemy.xp));
@@ -145,10 +147,13 @@ function render() {
 
   drawWorld();
   for (const gem of gems) gem.draw(ctx);
+  const scene = { player, enemies };
+  arsenal.draw(ctx, scene, 'under');
   for (const enemy of enemies) enemy.draw(ctx);
   effects.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
   player.draw(ctx);
+  arsenal.draw(ctx, scene, 'over');
 
   ctx.restore();
 

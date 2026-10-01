@@ -24,7 +24,14 @@ export class Arsenal {
     return weapon;
   }
 
-  update(dt, world) {
-    for (const weapon of this.weapons) weapon.update(dt, world);
+  update(dt, scene) {
+    for (const weapon of this.weapons) weapon.update(dt, scene);
+  }
+
+  /** Рисует оружие одного слоя: 'under' — под врагами, 'over' — над ними. */
+  draw(ctx, scene, layer) {
+    for (const weapon of this.weapons) {
+      if ((weapon.definition.layer ?? 'over') === layer) weapon.draw(ctx, scene);
+    }
   }
 }

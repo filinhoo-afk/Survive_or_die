@@ -2,9 +2,18 @@
  * Экземпляр оружия у игрока: уровень, текущие характеристики, перезарядка.
  *
  * Само поведение описано в определении (src/weapons/*.js):
- *   base   — характеристики первого уровня;
- *   levels — что меняет каждый следующий уровень;
- *   fire   — как стрелять; возвращает false, если выстрела не было.
+ *   base        — характеристики первого уровня;
+ *   levels      — что меняет каждый следующий уровень;
+ *   fire        — залп по перезарядке; false, если выстрела не было;
+ *   tick        — работа каждый кадр, для оружия без перезарядки;
+ *   createState — собственное изменяемое состояние экземпляра;
+ *   draw, layer — как и где рисовать само оружие: 'under' или 'over' врагов.
+ *
+ * Всё, кроме base и levels, необязательно.
+ *
+ * scene — то, с чем оружие работает в кадре:
+ *   { player, enemies, projectiles, killed }; в killed оружие кладёт
+ *   врагов, которых убило само, без снарядов.
  */
 export class Weapon {
   constructor(definition) {
@@ -13,6 +22,7 @@ export class Weapon {
     this.level = 1;
     this.stats = { ...definition.base };
     this.timer = 0;
+    this.state = definition.createState?.() ?? {};
   }
 
   get maxLevel() {
@@ -41,13 +51,20 @@ export class Weapon {
     this.level += 1;
   }
 
-  update(dt, world) {
+  update(dt, scene) {
+    this.definition.tick?.(this, dt, scene);
+    if (!this.definition.fire) return;
+
     this.timer = Math.max(0, this.timer - dt);
     if (this.timer > 0) return;
 
     // Холостой выстрел не тратит перезарядку: цель, вошедшая в радиус
     // сразу после «выстрела в пустоту», получает удар без ожидания.
-    if (this.definition.fire(this.stats, world)) this.timer = this.stats.cooldown;
+    if (this.definition.fire(this.stats, scene, this)) this.timer = this.stats.cooldown;
+  }
+
+  draw(ctx, scene) {
+    this.definition.draw?.(this, ctx, scene);
   }
 }
 

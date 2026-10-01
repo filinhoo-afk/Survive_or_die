@@ -56,6 +56,7 @@ const STAT_FORMAT = {
   cooldown: (v) => `${(1 / v).toFixed(1)}/с`,
   count: (v) => `${v} шт`,
   pierce: (v) => `${v}`,
+  radius: (v) => `${Math.round(v)}`,
 };
 
 /**

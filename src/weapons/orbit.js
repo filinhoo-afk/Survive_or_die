@@ -47,8 +47,8 @@ export const orbit = {
     nextHit: new WeakMap(),
   }),
 
-  tick(weapon, dt, { player, enemies, killed }) {
-    const { stats, state } = weapon;
+  tick(weapon, dt, { player, enemies, killed }, stats) {
+    const { state } = weapon;
     state.time += dt;
     state.angle += stats.rotation * dt;
     if (!player.alive) return;
@@ -73,8 +73,8 @@ export const orbit = {
     }
   },
 
-  draw(weapon, ctx, { player }) {
-    const { stats, state } = weapon;
+  draw(weapon, ctx, { player }, stats) {
+    const { state } = weapon;
 
     ctx.save();
     ctx.setLineDash([4, 8]);

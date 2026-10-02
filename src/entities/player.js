@@ -28,6 +28,13 @@ export class Player {
 
     /** Своё у каждого игрока, чтобы его можно было прокачивать. */
     this.magnetRadius = CONFIG.xp.magnetRadius;
+
+    /** Множители для всего оружия разом — их меняют пассивки. */
+    this.mods = { damage: 1, cooldown: 1, area: 1 };
+    /** Здоровья в секунду. */
+    this.regen = 0;
+    /** На столько слабее каждый удар по игроку. */
+    this.armor = 0;
   }
 
   get hpRatio() {
@@ -58,6 +65,10 @@ export class Player {
   }
 
   update(dt, input, bounds) {
+    if (this.alive && this.regen > 0) {
+      this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
+    }
+
     if (this.invulnerableFor > 0) {
       this.invulnerableFor = Math.max(0, this.invulnerableFor - dt);
       this.blinkClock += dt;
@@ -80,11 +91,14 @@ export class Player {
   takeDamage(amount) {
     if (!this.alive || this.invulnerableFor > 0) return false;
 
-    this.hp = Math.max(0, this.hp - amount);
+    // Броня не обнуляет удар полностью: иначе на пятом ранге
+    // слабые враги перестали бы быть угрозой вовсе.
+    const dealt = Math.max(1, amount - this.armor);
+    this.hp = Math.max(0, this.hp - dealt);
     this.invulnerableFor = CONFIG.player.invulnerability;
     this.blinkClock = 0;
 
-    if (this.hp === 0) this.alive = false;
+    if (this.hp <= 0) this.alive = false;
 
     return true;
   }

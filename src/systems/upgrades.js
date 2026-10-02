@@ -35,6 +35,76 @@ export const PASSIVES = [
     format: (value) => `${Math.round(value)}`,
   },
   {
+    id: 'might',
+    title: 'Сила',
+    text: 'Урон всего оружия +10%',
+    color: '#f0997b',
+    icon: 'might',
+    maxRank: 5,
+    get: (player) => player.mods.damage,
+    next: (value) => value + 0.1,
+    set: (player, value) => {
+      player.mods.damage = value;
+    },
+    format: (value) => `+${Math.round((value - 1) * 100)}%`,
+  },
+  {
+    id: 'haste',
+    title: 'Спешка',
+    text: 'Всё оружие перезаряжается на 8% быстрее',
+    color: '#f2c14e',
+    icon: 'rate',
+    maxRank: 5,
+    get: (player) => player.mods.cooldown,
+    next: (value) => value - 0.08,
+    set: (player, value) => {
+      player.mods.cooldown = value;
+    },
+    format: (value) => `−${Math.round((1 - value) * 100)}%`,
+  },
+  {
+    id: 'area',
+    title: 'Размах',
+    text: 'Аура и щит шире на 10%',
+    color: '#5dcaa5',
+    icon: 'area',
+    maxRank: 5,
+    get: (player) => player.mods.area,
+    next: (value) => value + 0.1,
+    set: (player, value) => {
+      player.mods.area = value;
+    },
+    format: (value) => `+${Math.round((value - 1) * 100)}%`,
+  },
+  {
+    id: 'regen',
+    title: 'Регенерация',
+    text: 'Восстанавливает 0.4 здоровья в секунду',
+    color: '#97c459',
+    icon: 'regen',
+    maxRank: 5,
+    get: (player) => player.regen,
+    next: (value) => value + 0.4,
+    set: (player, value) => {
+      player.regen = value;
+    },
+    format: (value) => `${value.toFixed(1)}/с`,
+  },
+  {
+    id: 'armor',
+    title: 'Броня',
+    text: 'Каждый удар по тебе слабее на 1',
+    color: '#b4b2a9',
+    icon: 'armor',
+    maxRank: 5,
+    get: (player) => player.armor,
+    next: (value) => value + 1,
+    set: (player, value) => {
+      player.armor = value;
+    },
+    format: (value) => `${value}`,
+  },
+  {
     id: 'magnet',
     title: 'Магнит',
     text: 'Кристаллы тянутся на 35% дальше',
@@ -49,6 +119,13 @@ export const PASSIVES = [
     format: (value) => `${Math.round(value)}`,
   },
 ];
+
+/** Относительные шансы карточек попасть в выбор. */
+const CARD_WEIGHT = {
+  newWeapon: 3,
+  weaponLevel: 3,
+  passive: 1,
+};
 
 /** Как показывать на карточке характеристику оружия. */
 const STAT_FORMAT = {
@@ -100,17 +177,28 @@ export class UpgradeState {
     return cards;
   }
 
-  /** Случайные разные карточки; когда предлагать нечего — пустой список. */
+  /**
+   * Случайные разные карточки; когда предлагать нечего — пустой список.
+   *
+   * Выбор взвешенный: пассивок восемь, а оружейных карточек меньше,
+   * и при равных шансах оружие почти перестало бы выпадать.
+   */
   roll(count, random = Math.random) {
     const pool = this.candidates();
+    const picked = [];
 
-    // Частичная перетасовка Фишера — Йетса: нужны только первые count.
-    for (let i = 0; i < Math.min(count, pool.length); i += 1) {
-      const j = i + Math.floor(random() * (pool.length - i));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+    while (picked.length < count && pool.length > 0) {
+      const total = pool.reduce((sum, card) => sum + card.weight, 0);
+      let ticket = random() * total;
+      let index = 0;
+      while (index < pool.length - 1 && ticket >= pool[index].weight) {
+        ticket -= pool[index].weight;
+        index += 1;
+      }
+      picked.push(pool.splice(index, 1)[0]);
     }
 
-    return pool.slice(0, count);
+    return picked;
   }
 
   newWeaponCard(definition) {
@@ -122,6 +210,7 @@ export class UpgradeState {
       icon: definition.icon,
       badge: 'новое оружие',
       preview: null,
+      weight: CARD_WEIGHT.newWeapon,
       apply: () => this.arsenal.add(definition.id),
     };
   }
@@ -129,7 +218,11 @@ export class UpgradeState {
   weaponLevelCard(weapon) {
     const { definition, nextLevel } = weapon;
     const format = STAT_FORMAT[nextLevel.show];
-    const after = weapon.previewNextStats();
+    // На карточке — действующие значения, с учётом «Силы», «Спешки»
+    // и «Размаха»: игрок должен видеть то, что получит на деле.
+    const mods = this.player.mods;
+    const now = weapon.effectiveStats(mods);
+    const after = weapon.effectiveStats(mods, weapon.previewNextStats());
 
     return {
       id: `level:${weapon.id}`,
@@ -138,7 +231,8 @@ export class UpgradeState {
       color: definition.color,
       icon: definition.icon,
       badge: `уровень ${weapon.level} → ${weapon.level + 1}`,
-      preview: [format(weapon.stats[nextLevel.show]), format(after[nextLevel.show])],
+      preview: [format(now[nextLevel.show]), format(after[nextLevel.show])],
+      weight: CARD_WEIGHT.weaponLevel,
       apply: () => weapon.levelUp(),
     };
   }
@@ -155,6 +249,7 @@ export class UpgradeState {
       icon: passive.icon,
       badge: rank === 0 ? 'новое' : `ранг ${rank} → ${rank + 1}`,
       preview: [passive.format(value), passive.format(passive.next(value))],
+      weight: CARD_WEIGHT.passive,
       apply: () => {
         passive.set(this.player, passive.next(passive.get(this.player)));
         this.ranks.set(passive.id, rank + 1);

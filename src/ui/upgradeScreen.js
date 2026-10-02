@@ -176,6 +176,44 @@ function drawIcon(ctx, kind, x, y, color) {
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fill();
+  } else if (kind === 'might') {
+    ctx.beginPath();
+    ctx.moveTo(x, y - 16);
+    ctx.lineTo(x + 12, y - 2);
+    ctx.lineTo(x + 5, y - 2);
+    ctx.lineTo(x + 5, y + 14);
+    ctx.lineTo(x - 5, y + 14);
+    ctx.lineTo(x - 5, y - 2);
+    ctx.lineTo(x - 12, y - 2);
+    ctx.closePath();
+    ctx.fill();
+  } else if (kind === 'area') {
+    ctx.lineWidth = 2.5;
+    for (const r of [6, 12, 18]) {
+      ctx.globalAlpha = 1 - r / 26;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (kind === 'regen') {
+    ctx.fillRect(x - 4, y - 14, 8, 28);
+    ctx.fillRect(x - 14, y - 4, 28, 8);
+  } else if (kind === 'armor') {
+    ctx.beginPath();
+    ctx.moveTo(x, y - 16);
+    ctx.lineTo(x + 13, y - 10);
+    ctx.lineTo(x + 11, y + 4);
+    ctx.lineTo(x, y + 15);
+    ctx.lineTo(x - 11, y + 4);
+    ctx.lineTo(x - 13, y - 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#0b0e14';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 10);
+    ctx.lineTo(x, y + 9);
+    ctx.stroke();
   } else if (kind === 'rate') {
     for (const dx of [-12, 0, 12]) {
       ctx.beginPath();

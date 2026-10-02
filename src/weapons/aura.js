@@ -64,8 +64,8 @@ export const aura = {
     return true;
   },
 
-  draw(weapon, ctx, { player }) {
-    const { stats, state } = weapon;
+  draw(weapon, ctx, { player }, stats) {
+    const { state } = weapon;
 
     ctx.save();
     ctx.beginPath();

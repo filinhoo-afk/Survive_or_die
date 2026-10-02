@@ -1,3 +1,6 @@
+/** Характеристики, которые растут от пассивки «Размах». */
+const AREA_STATS = ['radius', 'orbSize'];
+
 /**
  * Экземпляр оружия у игрока: уровень, текущие характеристики, перезарядка.
  *
@@ -6,6 +9,9 @@
  *   levels      — что меняет каждый следующий уровень;
  *   fire        — залп по перезарядке; false, если выстрела не было;
  *   tick        — работа каждый кадр, для оружия без перезарядки;
+ *
+ * fire, tick и draw получают уже действующие характеристики —
+ * с бонусами от пассивок игрока.
  *   createState — собственное изменяемое состояние экземпляра;
  *   draw, layer — как и где рисовать само оружие: 'under' или 'over' врагов.
  *
@@ -51,8 +57,31 @@ export class Weapon {
     this.level += 1;
   }
 
+  /**
+   * Характеристики с учётом пассивок игрока.
+   *
+   * Бонусы не вшиваются в stats, а накладываются при каждом обращении:
+   * так «Сила», взятая на пятой минуте, усиливает и оружие, подобранное
+   * на десятой.
+   *
+   * @param {{damage: number, cooldown: number, area: number}} [mods]
+   */
+  effectiveStats(mods, stats = this.stats) {
+    const result = { ...stats };
+    if (!mods) return result;
+
+    if ('damage' in result) result.damage *= mods.damage;
+    if ('cooldown' in result) result.cooldown *= mods.cooldown;
+    for (const key of AREA_STATS) {
+      if (key in result) result[key] *= mods.area;
+    }
+
+    return result;
+  }
+
   update(dt, scene) {
-    this.definition.tick?.(this, dt, scene);
+    const stats = this.effectiveStats(scene.player?.mods);
+    this.definition.tick?.(this, dt, scene, stats);
     if (!this.definition.fire) return;
 
     this.timer = Math.max(0, this.timer - dt);
@@ -60,11 +89,11 @@ export class Weapon {
 
     // Холостой выстрел не тратит перезарядку: цель, вошедшая в радиус
     // сразу после «выстрела в пустоту», получает удар без ожидания.
-    if (this.definition.fire(this.stats, scene, this)) this.timer = this.stats.cooldown;
+    if (this.definition.fire(stats, scene, this)) this.timer = stats.cooldown;
   }
 
   draw(ctx, scene) {
-    this.definition.draw?.(this, ctx, scene);
+    this.definition.draw?.(this, ctx, scene, this.effectiveStats(scene.player?.mods));
   }
 }
 

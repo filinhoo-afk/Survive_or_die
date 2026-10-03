@@ -119,8 +119,8 @@ function update(dt) {
   killed.push(...resolveProjectileHits(projectiles, enemies));
 
   for (const enemy of killed) {
-    effects.deathBurst(enemy.x, enemy.y, CONFIG.enemy.color);
-    gems.push(new Gem(enemy.x, enemy.y, CONFIG.enemy.xp));
+    effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
+    gems.push(new Gem(enemy.x, enemy.y, enemy.xp));
   }
 
   const levelsGained = player.gainXp(updateGems(gems, player, dt));
@@ -326,8 +326,8 @@ function drawMinimap() {
     canvas.height * scale,
   );
 
-  ctx.fillStyle = CONFIG.colors.enemy;
   for (const enemy of enemies) {
+    ctx.fillStyle = enemy.color;
     ctx.beginPath();
     ctx.arc(x + enemy.x * scale, y + enemy.y * scale, 2, 0, Math.PI * 2);
     ctx.fill();

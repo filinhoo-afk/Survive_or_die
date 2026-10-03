@@ -1,13 +1,18 @@
 import { CONFIG } from '../config.js';
 import { Enemy } from '../entities/enemy.js';
+import { ENEMY_TYPE_LIST } from '../enemies/types.js';
+
+/** Разброс стаи вокруг точки появления, пикселей. */
+const PACK_SPREAD = 28;
 
 /**
  * Выпускает врагов волнами за краем экрана, чтобы они входили в кадр,
  * а не появлялись из воздуха на глазах у игрока.
  */
 export class Spawner {
-  constructor(world, config = CONFIG.spawner) {
+  constructor(world, config = CONFIG.spawner, types = ENEMY_TYPE_LIST) {
     this.world = world;
+    this.types = types;
     this.interval = config.interval;
     this.waveSize = config.waveSize;
     this.maxEnemies = config.maxEnemies;
@@ -15,6 +20,8 @@ export class Spawner {
 
     this.timer = 0;
     this.wave = 0;
+    /** Секунд с начала забега — по ним открываются новые типы врагов. */
+    this.time = 0;
   }
 
   /** Сколько секунд осталось до следующей волны — для HUD. */
@@ -23,6 +30,7 @@ export class Spawner {
   }
 
   update(dt, enemies, camera) {
+    this.time += dt;
     this.timer += dt;
     if (this.timer < this.interval) return 0;
 
@@ -34,15 +42,44 @@ export class Spawner {
   spawnWave(enemies, camera) {
     this.wave += 1;
     let spawned = 0;
+    const inset = CONFIG.enemy.maxRadius;
 
     for (let i = 0; i < this.waveSize; i += 1) {
       if (enemies.length >= this.maxEnemies) break;
+
+      const type = this.pickType();
       const point = this.pickSpawnPoint(camera);
-      enemies.push(new Enemy(point.x, point.y));
-      spawned += 1;
+
+      // Стая появляется кучкой вокруг одной точки, а не цепочкой по краю.
+      for (let k = 0; k < type.pack; k += 1) {
+        if (enemies.length >= this.maxEnemies) break;
+        const angle = Math.random() * Math.PI * 2;
+        const offset = k === 0 ? 0 : Math.random() * PACK_SPREAD;
+        const x = clamp(point.x + Math.cos(angle) * offset, inset, this.world.width - inset);
+        const y = clamp(point.y + Math.sin(angle) * offset, inset, this.world.height - inset);
+        enemies.push(new Enemy(x, y, type));
+        spawned += 1;
+      }
     }
 
     return spawned;
+  }
+
+  /**
+   * Тип врага по весам среди уже открытых: чем больше weight, тем чаще.
+   * Ранние секунды забега — только обычные враги, пока у игрока одна пушка.
+   */
+  pickType() {
+    const open = this.types.filter((type) => type.from <= this.time);
+    const total = open.reduce((sum, type) => sum + type.weight, 0);
+    let ticket = Math.random() * total;
+
+    for (const type of open) {
+      if (ticket < type.weight) return type;
+      ticket -= type.weight;
+    }
+
+    return open[open.length - 1];
   }
 
   /**
@@ -63,7 +100,7 @@ export class Spawner {
     const width = right - left;
     const height = bottom - top;
     const perimeter = 2 * (width + height);
-    const inset = CONFIG.enemy.radius;
+    const inset = CONFIG.enemy.maxRadius;
 
     let last = null;
 

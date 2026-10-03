@@ -9,7 +9,9 @@ export class Gem {
     this.x = x;
     this.y = y;
     this.value = value;
-    this.radius = CONFIG.gem.radius;
+    /** Крупный кристалл от толстого врага — больше и другого цвета. */
+    this.big = value >= 5;
+    this.radius = this.big ? CONFIG.gem.radius * 1.6 : CONFIG.gem.radius;
     this.pulled = false;
     this.speed = 0;
     this.collected = false;
@@ -60,7 +62,7 @@ export class Gem {
     ctx.lineTo(x, y + r * 1.4);
     ctx.lineTo(x - r, y);
     ctx.closePath();
-    ctx.fillStyle = CONFIG.colors.gem;
+    ctx.fillStyle = this.big ? CONFIG.colors.gemBig : CONFIG.colors.gem;
     ctx.fill();
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = CONFIG.colors.gemOutline;
@@ -72,7 +74,7 @@ export class Gem {
     ctx.lineTo(x + r * 0.55, y - r * 0.2);
     ctx.lineTo(x - r * 0.55, y - r * 0.2);
     ctx.closePath();
-    ctx.fillStyle = CONFIG.colors.gemLight;
+    ctx.fillStyle = this.big ? CONFIG.colors.gemBigLight : CONFIG.colors.gemLight;
     ctx.fill();
 
     ctx.restore();

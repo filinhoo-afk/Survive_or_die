@@ -9,15 +9,16 @@ export class Effects {
     this.items = [];
   }
 
-  deathBurst(x, y, color) {
+  /** @param {number} [scale] размер вспышки относительно обычного врага */
+  deathBurst(x, y, color, scale = 1) {
     this.items.push({
       kind: 'burst',
       x,
       y,
       color,
       age: 0,
-      life: CONFIG.effects.deathLife,
-      radius: CONFIG.effects.deathRadius,
+      life: CONFIG.effects.deathLife * Math.sqrt(scale),
+      radius: CONFIG.effects.deathRadius * scale,
     });
   }
 

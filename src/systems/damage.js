@@ -20,6 +20,22 @@ export function applyContactDamage(player, enemies) {
   return null;
 }
 
+/** Попадание вражеского снаряда в игрока; во время неуязвимости снаряд пролетает насквозь. */
+export function resolveEnemyShotHits(shots, player) {
+  if (!player.alive) return;
+
+  for (const shot of shots) {
+    if (shot.expired) continue;
+
+    const dx = shot.x - player.x;
+    const dy = shot.y - player.y;
+    const reach = shot.radius + player.radius;
+    if (dx * dx + dy * dy > reach * reach) continue;
+
+    if (player.takeDamage(shot.damage)) shot.spent = true;
+  }
+}
+
 /**
  * Попадания снарядов во врагов. Снаряд с пробитием летит дальше,
  * пока не исчерпает его; каждого врага он задевает только раз.

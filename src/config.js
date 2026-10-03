@@ -26,6 +26,9 @@ export const CONFIG = {
     levelUp: '#7ee787',
     projectile: '#9ad8ff',
     projectileTrail: 'rgba(154, 216, 255, 0.3)',
+    enemyShot: '#ff9f43',
+    enemyShotTrail: 'rgba(255, 159, 67, 0.3)',
+    enemyShotOutline: '#4a2205',
     knife: '#e6f1ff',
     knifeEdge: '#9fb3c8',
     knifeHandle: '#8a5a34',
@@ -87,6 +90,14 @@ export const CONFIG = {
     /** Секунд жизни, если ни во что не попал. */
     lifetime: 1.4,
     damage: 20,
+  },
+  /** Значения по умолчанию для снарядов врагов; стрелок может переопределить. */
+  enemyShot: {
+    radius: 6,
+    /** Медленнее снаряда игрока и заметно медленнее самого игрока: уворот возможен. */
+    speed: 240,
+    lifetime: 3,
+    damage: 10,
   },
   spawner: {
     /** Секунд между волнами. */

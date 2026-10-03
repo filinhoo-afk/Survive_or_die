@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
+import { EnemyShot } from './enemyShot.js';
 
 /** Враг бежит к игроку; как именно и насколько опасен — решает его тип. */
 export class Enemy {
@@ -23,6 +24,15 @@ export class Enemy {
 
     // Случайная фаза петляния, иначе вся стая виляет синхронно.
     this.age = Math.random() * 10;
+
+    /** Только у стрелков: секунд до следующего прицеливания и до выстрела. */
+    this.shotCooldown = type.ranged ? Math.random() * type.ranged.cooldown : 0;
+    this.aimLeft = 0;
+  }
+
+  /** Стрелок целится: стоит на месте и светится — игрок успевает среагировать. */
+  get aiming() {
+    return this.aimLeft > 0;
   }
 
   /**
@@ -45,7 +55,10 @@ export class Enemy {
     return !this.alive;
   }
 
-  update(dt, target) {
+  /**
+   * @param {Array} [shots] сюда стрелки кладут выпущенные снаряды
+   */
+  update(dt, target, shots) {
     this.age += dt;
     if (this.flashFor > 0) this.flashFor = Math.max(0, this.flashFor - dt);
 
@@ -56,11 +69,56 @@ export class Enemy {
     // Стоим на месте, если уже вплотную: иначе деление на ноль и дрожание.
     if (distance < 0.001) return;
 
+    if (this.type.ranged) {
+      this.updateShooter(dt, dx, dy, distance, shots);
+      return;
+    }
+
     // Петляние: курс отклоняется туда-сюда, но в среднем ведёт к игроку.
     const heading = Math.atan2(dy, dx) + Math.sin(this.age * 7) * this.type.wobble;
     this.x += Math.cos(heading) * this.speed * dt;
     this.y += Math.sin(heading) * this.speed * dt;
     this.angle = heading;
+  }
+
+  /**
+   * Стрелок: подходит на keepDistance, при сближении пятится, а между
+   * выстрелами замирает на время прицеливания — выстрел не из ниоткуда.
+   */
+  updateShooter(dt, dx, dy, distance, shots) {
+    const ranged = this.type.ranged;
+    const nx = dx / distance;
+    const ny = dy / distance;
+    this.angle = Math.atan2(dy, dx);
+
+    if (this.aiming) {
+      this.aimLeft -= dt;
+      if (this.aimLeft <= 0) {
+        this.aimLeft = 0;
+        this.shotCooldown = ranged.cooldown;
+        shots?.push(
+          new EnemyShot(this.x + nx * this.radius, this.y + ny * this.radius, nx, ny, {
+            damage: ranged.damage,
+            speed: ranged.speed,
+          }),
+        );
+      }
+      return;
+    }
+
+    if (distance > ranged.keepDistance) {
+      this.x += nx * this.speed * dt;
+      this.y += ny * this.speed * dt;
+    } else if (distance < ranged.keepDistance * 0.7) {
+      this.x -= nx * this.speed * dt;
+      this.y -= ny * this.speed * dt;
+    }
+
+    // Целится только с близкого расстояния: издалека снаряд всё равно истечёт.
+    this.shotCooldown = Math.max(0, this.shotCooldown - dt);
+    if (this.shotCooldown === 0 && distance <= ranged.keepDistance * 1.6) {
+      this.aimLeft = ranged.windup;
+    }
   }
 
   draw(ctx) {
@@ -72,7 +130,10 @@ export class Enemy {
     const r = this.radius;
     ctx.beginPath();
 
-    if (this.type.shape === 'dart') {
+    if (this.type.shape === 'shooter') {
+      // Круг со стволом вперёд: «башенка», сразу видно, что стреляет.
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+    } else if (this.type.shape === 'dart') {
       // Узкий наконечник: читается как «быстрый» ещё до того, как поедет.
       ctx.moveTo(r * 1.5, 0);
       ctx.lineTo(-r, r * 0.85);
@@ -108,6 +169,18 @@ export class Enemy {
       ctx.arc(r * 0.45, 0, 3, 0, Math.PI * 2);
       ctx.fillStyle = this.type.outline;
       ctx.fill();
+    }
+
+    if (this.type.shape === 'shooter') {
+      ctx.fillStyle = this.type.outline;
+      ctx.fillRect(r * 0.4, -3, r * 1.1, 6);
+      // Перед выстрелом ствол раскаляется.
+      if (this.aiming) {
+        ctx.beginPath();
+        ctx.arc(r * 1.5, 0, 5, 0, Math.PI * 2);
+        ctx.fillStyle = CONFIG.colors.enemyShot;
+        ctx.fill();
+      }
     }
 
     ctx.restore();

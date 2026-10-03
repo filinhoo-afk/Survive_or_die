@@ -8,6 +8,7 @@ import { Spawner } from './systems/spawner.js';
 import {
   applyContactDamage,
   removeDead,
+  resolveEnemyShotHits,
   resolveProjectileHits,
 } from './systems/damage.js';
 import { Effects } from './systems/effects.js';
@@ -31,6 +32,7 @@ const camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoo
 
 const enemies = [];
 const projectiles = [];
+const enemyShots = [];
 const gems = [];
 const spawner = new Spawner(world);
 const arsenal = new Arsenal();
@@ -108,9 +110,12 @@ function update(dt) {
 
   spawner.update(dt, enemies, camera);
 
-  for (const enemy of enemies) enemy.update(dt, player);
+  for (const enemy of enemies) enemy.update(dt, player, enemyShots);
   separate(enemies);
   applyContactDamage(player, enemies);
+
+  for (const shot of enemyShots) shot.update(dt);
+  resolveEnemyShotHits(enemyShots, player);
 
   // Щит и аура убивают без снарядов — кладут жертв в тот же список.
   const killed = [];
@@ -132,6 +137,7 @@ function update(dt) {
 
   removeDead(enemies);
   pruneProjectiles(projectiles, world);
+  pruneProjectiles(enemyShots, world);
   effects.update(dt);
 
   camera.follow(player, dt);
@@ -152,6 +158,7 @@ function render() {
   for (const enemy of enemies) enemy.draw(ctx);
   effects.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
+  for (const shot of enemyShots) shot.draw(ctx);
   player.draw(ctx);
   arsenal.draw(ctx, scene, 'over');
 

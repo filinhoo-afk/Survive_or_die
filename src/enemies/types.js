@@ -7,7 +7,10 @@
  *   mass            — кто кого расталкивает: тяжёлый почти не сдвигается;
  *   knockbackResist — доля отброса, которую враг гасит;
  *   wobble          — насколько петляет на бегу, радиан;
- *   showHealthBar   — рисовать ли полоску здоровья над головой.
+ *   showHealthBar   — рисовать ли полоску здоровья над головой;
+ *   ranged          — если задано, враг стреляет: держится на дистанции
+ *                     keepDistance, раз в cooldown секунд пускает снаряд
+ *                     (damage, speed), перед выстрелом windup секунд целится.
  */
 export const ENEMY_TYPES = {
   grunt: {
@@ -71,6 +74,36 @@ export const ENEMY_TYPES = {
     knockbackResist: 0.85,
     wobble: 0,
     showHealthBar: true,
+  },
+
+  /**
+   * Стрелок: не лезет в ближний бой, а держится на расстоянии и
+   * обстреливает. Хрупкий — награда за то, что до него надо добраться.
+   */
+  shooter: {
+    id: 'shooter',
+    from: 40,
+    radius: 12,
+    speed: 85,
+    hp: 30,
+    damage: 8,
+    xp: 3,
+    color: '#ff9f43',
+    outline: '#4a2205',
+    shape: 'shooter',
+    weight: 1.5,
+    pack: 1,
+    mass: 1,
+    knockbackResist: 0,
+    wobble: 0,
+    showHealthBar: false,
+    ranged: {
+      keepDistance: 260,
+      cooldown: 2.2,
+      windup: 0.45,
+      damage: 10,
+      speed: 240,
+    },
   },
 };
 

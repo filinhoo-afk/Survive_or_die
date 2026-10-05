@@ -27,18 +27,43 @@ canvas.height = CONFIG.height;
 
 const world = CONFIG.world;
 const input = createInput();
-const player = new Player(world.width / 2, world.height / 2);
-const camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
 
-const enemies = [];
-const projectiles = [];
-const enemyShots = [];
-const gems = [];
-const spawner = new Spawner(world);
-const arsenal = new Arsenal();
-arsenal.add('cannon');
-const effects = new Effects();
-const upgrades = new UpgradeState(arsenal, player);
+let player;
+let camera;
+let enemies;
+let projectiles;
+let enemyShots;
+let gems;
+let spawner;
+let arsenal;
+let effects;
+let upgrades;
+
+/** Режим игры: меню, забег или пауза (поражение — это !player.alive). */
+let mode = 'menu';
+
+/** Собирает мир с нуля — и для первого запуска, и для рестарта. */
+function newRun() {
+  player = new Player(world.width / 2, world.height / 2);
+  camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
+  enemies = [];
+  projectiles = [];
+  enemyShots = [];
+  gems = [];
+  spawner = new Spawner(world);
+  arsenal = new Arsenal();
+  arsenal.add('cannon');
+  effects = new Effects();
+  upgrades = new UpgradeState(arsenal, player);
+  pendingLevels = 0;
+  offers = null;
+  hoveredCard = -1;
+  elapsed = 0;
+
+  // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
+  spawner.spawnWave(enemies, camera);
+  camera.snapTo(player);
+}
 
 /** Сколько повышений ещё не разыграно — за раз их может прийти несколько. */
 let pendingLevels = 0;
@@ -66,9 +91,42 @@ function pickCard(index) {
 
 const CHOICE_KEYS = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 };
 
+function startRun() {
+  newRun();
+  mode = 'playing';
+}
+
 window.addEventListener('keydown', (event) => {
-  if (!offers || !(event.code in CHOICE_KEYS)) return;
-  pickCard(CHOICE_KEYS[event.code]);
+  if (event.repeat) return;
+
+  if (mode === 'menu') {
+    if (event.code === 'Enter' || event.code === 'Space') startRun();
+    return;
+  }
+
+  if (!player.alive) {
+    if (event.code === 'KeyR' || event.code === 'Enter') startRun();
+    else if (event.code === 'Escape') mode = 'menu';
+    return;
+  }
+
+  if (offers) {
+    if (event.code in CHOICE_KEYS) pickCard(CHOICE_KEYS[event.code]);
+    return;
+  }
+
+  if (event.code === 'Escape' || event.code === 'KeyP') {
+    mode = mode === 'paused' ? 'playing' : 'paused';
+  } else if (mode === 'paused' && event.code === 'KeyR') {
+    startRun();
+  } else if (mode === 'paused' && event.code === 'KeyM') {
+    mode = 'menu';
+  }
+});
+
+// Пауза сама включается, когда вкладка теряет фокус.
+window.addEventListener('blur', () => {
+  if (mode === 'playing' && player.alive && !offers) mode = 'paused';
 });
 
 /** Канвас растягивается стилями, поэтому переводим координаты мыши в его пиксели. */
@@ -88,22 +146,32 @@ canvas.addEventListener('mousemove', (event) => {
 });
 
 canvas.addEventListener('click', (event) => {
+  if (mode === 'menu') {
+    startRun();
+    return;
+  }
+  if (mode === 'paused') {
+    mode = 'playing';
+    return;
+  }
+  if (!player.alive) {
+    startRun();
+    return;
+  }
   if (!offers) return;
   const { x, y } = canvasPoint(event);
   pickCard(cardAt(x, y, offers.length, canvas));
   canvas.style.cursor = 'default';
 });
 
-// Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
-spawner.spawnWave(enemies, camera);
-
-camera.snapTo(player);
-
 let elapsed = 0;
 
+// Мир нужен уже в меню — он рисуется на фоне.
+newRun();
+
 function update(dt) {
-  // После смерти и на экране выбора мир замирает целиком.
-  if (!player.alive || offers) return;
+  // В меню, на паузе, после смерти и на экране выбора мир замирает целиком.
+  if (mode !== 'playing' || !player.alive || offers) return;
 
   elapsed += dt;
   player.update(dt, input, world);
@@ -164,7 +232,11 @@ function render() {
 
   ctx.restore();
 
-  drawHud();
+  if (mode === 'menu') drawMenu();
+  else {
+    drawHud();
+    if (mode === 'paused') drawPause();
+  }
 }
 
 function drawWorld() {
@@ -302,12 +374,45 @@ function drawDefeat() {
   ctx.fillStyle = CONFIG.colors.hud;
   ctx.font = '15px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(
-    `Продержались ${elapsed.toFixed(1)} с · обновите страницу, чтобы начать заново`,
+    `Продержались ${elapsed.toFixed(1)} с · уровень ${player.level}`,
     canvas.width / 2,
     canvas.height / 2 + 32,
   );
+  ctx.fillText(
+    'R / Enter / клик — заново · Esc — в меню',
+    canvas.width / 2,
+    canvas.height / 2 + 60,
+  );
 
   ctx.textAlign = 'left';
+}
+
+/** Затемняет экран и рисует крупный заголовок с подсказками под ним. */
+function drawOverlay(title, lines) {
+  ctx.fillStyle = 'rgba(8, 10, 16, 0.7)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = CONFIG.colors.hud;
+  ctx.font = 'bold 40px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 20);
+
+  ctx.font = '16px "Segoe UI", system-ui, sans-serif';
+  lines.forEach((line, i) => {
+    ctx.fillText(line, canvas.width / 2, canvas.height / 2 + 20 + i * 26);
+  });
+  ctx.textAlign = 'left';
+}
+
+function drawMenu() {
+  drawOverlay('Survive or Die', [
+    'Enter / Пробел / клик — начать',
+    'WASD / стрелки — движение, оружие стреляет само',
+  ]);
+}
+
+function drawPause() {
+  drawOverlay('Пауза', ['Esc / P / клик — продолжить', 'R — заново · M — в меню']);
 }
 
 /** Миникарта в углу: где игрок и куда смотрит камера. */

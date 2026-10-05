@@ -4,7 +4,8 @@ import { EnemyShot } from './enemyShot.js';
 
 /** Враг бежит к игроку; как именно и насколько опасен — решает его тип. */
 export class Enemy {
-  constructor(x, y, type = ENEMY_TYPES.grunt) {
+  /** @param {number} [hpScale] множитель здоровья — растёт вместе со временем забега */
+  constructor(x, y, type = ENEMY_TYPES.grunt, hpScale = 1) {
     this.x = x;
     this.y = y;
     this.type = type;
@@ -16,7 +17,7 @@ export class Enemy {
     this.mass = type.mass;
     this.angle = 0;
 
-    this.maxHp = type.hp;
+    this.maxHp = Math.round(type.hp * hpScale);
     this.hp = this.maxHp;
     this.alive = true;
     /** Сколько секунд ещё гореть белым после попадания. */

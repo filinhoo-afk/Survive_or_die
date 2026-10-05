@@ -59,6 +59,7 @@ function newRun() {
   offers = null;
   hoveredCard = -1;
   elapsed = 0;
+  kills = 0;
 
   // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
   spawner.spawnWave(enemies, camera);
@@ -165,6 +166,13 @@ canvas.addEventListener('click', (event) => {
 });
 
 let elapsed = 0;
+let kills = 0;
+
+/** Секунды в «м:сс» — для таймера забега. */
+function formatTime(seconds) {
+  const total = Math.floor(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
 
 // Мир нужен уже в меню — он рисуется на фоне.
 newRun();
@@ -191,6 +199,7 @@ function update(dt) {
   for (const shot of projectiles) shot.update(dt);
   killed.push(...resolveProjectileHits(projectiles, enemies));
 
+  kills += killed.length;
   for (const enemy of killed) {
     effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
     gems.push(new Gem(enemy.x, enemy.y, enemy.xp));
@@ -298,7 +307,7 @@ function drawHud() {
     16,
     60,
   );
-  ctx.fillText(`Время: ${elapsed.toFixed(1)} с`, 16, 80);
+  ctx.fillText(`Время: ${formatTime(elapsed)} · убийств: ${kills}`, 16, 80);
   ctx.fillText(`Врагов: ${enemies.length} · кристаллов: ${gems.length}`, 16, 100);
   ctx.fillText(
     `Волна ${spawner.wave} · следующая через ${spawner.timeToNextWave.toFixed(1)} с`,
@@ -374,7 +383,7 @@ function drawDefeat() {
   ctx.fillStyle = CONFIG.colors.hud;
   ctx.font = '15px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(
-    `Продержались ${elapsed.toFixed(1)} с · уровень ${player.level}`,
+    `Продержались ${formatTime(elapsed)} · убийств ${kills} · уровень ${player.level}`,
     canvas.width / 2,
     canvas.height / 2 + 32,
   );

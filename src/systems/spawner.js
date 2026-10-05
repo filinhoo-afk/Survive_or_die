@@ -13,15 +13,39 @@ export class Spawner {
   constructor(world, config = CONFIG.spawner, types = ENEMY_TYPE_LIST) {
     this.world = world;
     this.types = types;
-    this.interval = config.interval;
-    this.waveSize = config.waveSize;
-    this.maxEnemies = config.maxEnemies;
+    this.baseInterval = config.interval;
+    this.baseWaveSize = config.waveSize;
+    this.baseMaxEnemies = config.maxEnemies;
     this.margin = config.margin;
+    this.ramp = config.ramp;
 
     this.timer = 0;
     this.wave = 0;
-    /** Секунд с начала забега — по ним открываются новые типы врагов. */
+    /** Секунд с начала забега — по ним открываются новые типы врагов и растёт сложность. */
     this.time = 0;
+  }
+
+  get minutes() {
+    return this.time / 60;
+  }
+
+  /** Секунд между волнами: сокращается со временем, но не ниже минимума. */
+  get interval() {
+    const { intervalShrinkPerMinute, minInterval } = this.ramp;
+    return Math.max(minInterval, this.baseInterval - intervalShrinkPerMinute * this.minutes);
+  }
+
+  get waveSize() {
+    return this.baseWaveSize + Math.floor(this.time / this.ramp.waveSizeEvery);
+  }
+
+  get maxEnemies() {
+    return Math.round(this.baseMaxEnemies + this.ramp.maxEnemiesPerMinute * this.minutes);
+  }
+
+  /** Во сколько раз здоровье новых врагов больше базового. */
+  get hpScale() {
+    return 1 + this.ramp.hpPerMinute * this.minutes;
   }
 
   /** Сколько секунд осталось до следующей волны — для HUD. */
@@ -57,7 +81,7 @@ export class Spawner {
         const offset = k === 0 ? 0 : Math.random() * PACK_SPREAD;
         const x = clamp(point.x + Math.cos(angle) * offset, inset, this.world.width - inset);
         const y = clamp(point.y + Math.sin(angle) * offset, inset, this.world.height - inset);
-        enemies.push(new Enemy(x, y, type));
+        enemies.push(new Enemy(x, y, type, this.hpScale));
         spawned += 1;
       }
     }

@@ -18,6 +18,7 @@ import { UpgradeState } from './systems/upgrades.js';
 import { cardAt, drawUpgradeScreen } from './ui/upgradeScreen.js';
 import { pruneProjectiles } from './systems/weapons.js';
 import { Arsenal } from './systems/arsenal.js';
+import * as audio from './engine/audio.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -85,6 +86,7 @@ function openChoice() {
 function pickCard(index) {
   if (!offers || index < 0 || index >= offers.length) return;
   offers[index].apply();
+  audio.play('pick');
   pendingLevels -= 1;
   offers = null;
   if (pendingLevels > 0) openChoice();
@@ -95,10 +97,25 @@ const CHOICE_KEYS = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, N
 function startRun() {
   newRun();
   mode = 'playing';
+  audio.play('start');
+}
+
+function setMode(next) {
+  if (mode === next) return;
+  if (next === 'paused') audio.play('pause');
+  mode = next;
 }
 
 window.addEventListener('keydown', (event) => {
   if (event.repeat) return;
+
+  // Браузер включает звук только после жеста игрока — первое нажатие и есть он.
+  audio.unlock();
+  audio.startMusic();
+  if (event.code === 'KeyN') {
+    audio.toggleMute();
+    return;
+  }
 
   if (mode === 'menu') {
     if (event.code === 'Enter' || event.code === 'Space') startRun();
@@ -107,7 +124,7 @@ window.addEventListener('keydown', (event) => {
 
   if (!player.alive) {
     if (event.code === 'KeyR' || event.code === 'Enter') startRun();
-    else if (event.code === 'Escape') mode = 'menu';
+    else if (event.code === 'Escape') setMode('menu');
     return;
   }
 
@@ -117,17 +134,17 @@ window.addEventListener('keydown', (event) => {
   }
 
   if (event.code === 'Escape' || event.code === 'KeyP') {
-    mode = mode === 'paused' ? 'playing' : 'paused';
+    setMode(mode === 'paused' ? 'playing' : 'paused');
   } else if (mode === 'paused' && event.code === 'KeyR') {
     startRun();
   } else if (mode === 'paused' && event.code === 'KeyM') {
-    mode = 'menu';
+    setMode('menu');
   }
 });
 
 // Пауза сама включается, когда вкладка теряет фокус.
 window.addEventListener('blur', () => {
-  if (mode === 'playing' && player.alive && !offers) mode = 'paused';
+  if (mode === 'playing' && player.alive && !offers) setMode('paused');
 });
 
 /** Канвас растягивается стилями, поэтому переводим координаты мыши в его пиксели. */
@@ -147,12 +164,14 @@ canvas.addEventListener('mousemove', (event) => {
 });
 
 canvas.addEventListener('click', (event) => {
+  audio.unlock();
+  audio.startMusic();
   if (mode === 'menu') {
     startRun();
     return;
   }
   if (mode === 'paused') {
-    mode = 'playing';
+    setMode('playing');
     return;
   }
   if (!player.alive) {
@@ -188,24 +207,32 @@ function update(dt) {
 
   for (const enemy of enemies) enemy.update(dt, player, enemyShots);
   separate(enemies);
+  const hpBefore = player.hp;
   applyContactDamage(player, enemies);
 
   for (const shot of enemyShots) shot.update(dt);
   resolveEnemyShotHits(enemyShots, player);
+  if (player.hp < hpBefore) audio.play(player.alive ? 'hit' : 'death');
 
   // Щит и аура убивают без снарядов — кладут жертв в тот же список.
   const killed = [];
+  const shotsBefore = projectiles.length;
   arsenal.update(dt, { player, enemies, projectiles, killed });
+  if (projectiles.length > shotsBefore) audio.play('shot');
   for (const shot of projectiles) shot.update(dt);
   killed.push(...resolveProjectileHits(projectiles, enemies));
 
   kills += killed.length;
+  if (killed.length > 0) audio.play('kill');
   for (const enemy of killed) {
     effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
     gems.push(new Gem(enemy.x, enemy.y, enemy.xp));
   }
 
-  const levelsGained = player.gainXp(updateGems(gems, player, dt));
+  const xpGained = updateGems(gems, player, dt);
+  if (xpGained > 0) audio.play('gem');
+  const levelsGained = player.gainXp(xpGained);
+  if (levelsGained > 0) audio.play('levelUp');
   for (let i = 0; i < levelsGained; i += 1) {
     effects.levelUp(player.x, player.y, player.level - levelsGained + i + 1);
   }
@@ -220,7 +247,14 @@ function update(dt) {
   camera.follow(player, dt);
 }
 
+/** Музыка тише, когда мир стоит: меню, пауза, выбор апгрейда, смерть. */
+function syncMusic() {
+  const active = mode === 'playing' && player.alive && !offers;
+  audio.setMusicLevel(active ? 1 : 0.35);
+}
+
 function render() {
+  syncMusic();
   // Фон за пределами мира — чтобы край был виден, а не обрывался в пустоту.
   ctx.fillStyle = CONFIG.colors.outside;
   ctx.fillRect(0, 0, canvas.width, canvas.height);

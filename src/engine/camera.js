@@ -10,6 +10,22 @@ export class Camera {
     this.smoothing = smoothing;
     this.x = 0;
     this.y = 0;
+    this.trauma = 0;
+    this.shakeX = 0;
+    this.shakeY = 0;
+  }
+
+  /** Добавляет тряски; несколько ударов подряд складываются, но не выше 1. */
+  addShake(amount) {
+    this.trauma = Math.min(1, this.trauma + amount);
+  }
+
+  /** Затухание и новое случайное смещение; зовётся и после смерти игрока. */
+  updateShake(dt, { maxOffset, decay }) {
+    this.trauma = Math.max(0, this.trauma - decay * dt);
+    const power = this.trauma * this.trauma * maxOffset;
+    this.shakeX = (Math.random() * 2 - 1) * power;
+    this.shakeY = (Math.random() * 2 - 1) * power;
   }
 
   /** Мгновенно ставит камеру по центру цели — нужно при старте и рестарте. */
@@ -41,7 +57,7 @@ export class Camera {
   /** Сдвигает систему координат так, что дальше можно рисовать в мировых координатах. */
   apply(ctx) {
     // Округление до целых пикселей убирает дрожание тонких линий сетки.
-    ctx.translate(-Math.round(this.x), -Math.round(this.y));
+    ctx.translate(-Math.round(this.x + this.shakeX), -Math.round(this.y + this.shakeY));
   }
 
   /** Видимый прямоугольник мира — по нему отсекаем всё, что рисовать не нужно. */

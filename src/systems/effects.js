@@ -11,6 +11,7 @@ export class Effects {
 
   /** @param {number} [scale] размер вспышки относительно обычного врага */
   deathBurst(x, y, color, scale = 1) {
+    this.spawnParticles(x, y, color, scale);
     this.items.push({
       kind: 'burst',
       x,
@@ -20,6 +21,28 @@ export class Effects {
       life: CONFIG.effects.deathLife * Math.sqrt(scale),
       radius: CONFIG.effects.deathRadius * scale,
     });
+  }
+
+  /** Осколки разлетаются во все стороны и тормозят о воздух. */
+  spawnParticles(x, y, color, scale) {
+    const cfg = CONFIG.effects.particles;
+    const room = cfg.max - this.items.length;
+    const count = Math.min(Math.round(cfg.perScale * scale), Math.max(0, room));
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
+      this.items.push({
+        kind: 'particle',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color,
+        age: 0,
+        life: cfg.lifeMin + Math.random() * (cfg.lifeMax - cfg.lifeMin),
+        size: cfg.size * (0.6 + Math.random() * 0.8),
+      });
+    }
   }
 
   /** Волна от игрока и надпись с новым уровнем. */
@@ -49,6 +72,13 @@ export class Effects {
     for (let i = this.items.length - 1; i >= 0; i -= 1) {
       const item = this.items[i];
       item.age += dt;
+      if (item.kind === 'particle') {
+        const drag = Math.exp(-4 * dt);
+        item.vx *= drag;
+        item.vy *= drag;
+        item.x += item.vx * dt;
+        item.y += item.vy * dt;
+      }
       if (item.age < item.life) continue;
       this.items[i] = this.items[this.items.length - 1];
       this.items.pop();
@@ -61,6 +91,7 @@ export class Effects {
     for (const item of this.items) {
       const t = item.age / item.life;
       if (item.kind === 'burst') drawBurst(ctx, item, t);
+      else if (item.kind === 'particle') drawParticle(ctx, item, t);
       else if (item.kind === 'ring') drawRing(ctx, item, t);
       else drawText(ctx, item, t);
     }
@@ -85,6 +116,14 @@ function drawBurst(ctx, item, t) {
   ctx.beginPath();
   ctx.arc(item.x, item.y, item.radius * (0.4 + 0.6 * t), 0, Math.PI * 2);
   ctx.stroke();
+}
+
+/** Осколок — квадратик, который уменьшается и тает. */
+function drawParticle(ctx, item, t) {
+  const size = item.size * (1 - 0.6 * t);
+  ctx.globalAlpha = 1 - t;
+  ctx.fillStyle = item.color;
+  ctx.fillRect(item.x - size / 2, item.y - size / 2, size, size);
 }
 
 /** Кольцо уровня быстро разлетается и медленно гаснет. */

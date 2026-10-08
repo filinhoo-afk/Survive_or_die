@@ -197,6 +197,9 @@ function formatTime(seconds) {
 newRun();
 
 function update(dt) {
+  // Тряска доигрывает и после смерти игрока, но замирает вместе с миром на паузе.
+  if (mode === 'playing' && !offers) camera.updateShake(dt, CONFIG.shake);
+
   // В меню, на паузе, после смерти и на экране выбора мир замирает целиком.
   if (mode !== 'playing' || !player.alive || offers) return;
 
@@ -212,7 +215,10 @@ function update(dt) {
 
   for (const shot of enemyShots) shot.update(dt);
   resolveEnemyShotHits(enemyShots, player);
-  if (player.hp < hpBefore) audio.play(player.alive ? 'hit' : 'death');
+  if (player.hp < hpBefore) {
+    audio.play(player.alive ? 'hit' : 'death');
+    camera.addShake(player.alive ? CONFIG.shake.playerHit : CONFIG.shake.playerDeath);
+  }
 
   // Щит и аура убивают без снарядов — кладут жертв в тот же список.
   const killed = [];
@@ -223,7 +229,10 @@ function update(dt) {
   killed.push(...resolveProjectileHits(projectiles, enemies));
 
   kills += killed.length;
-  if (killed.length > 0) audio.play('kill');
+  if (killed.length > 0) {
+    audio.play('kill');
+    camera.addShake(CONFIG.shake.enemyDeath * Math.min(killed.length, 4));
+  }
   for (const enemy of killed) {
     effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
     gems.push(new Gem(enemy.x, enemy.y, enemy.xp));

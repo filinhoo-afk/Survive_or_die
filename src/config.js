@@ -24,6 +24,8 @@ export const CONFIG = {
     gemOutline: '#1d1240',
     xpBar: '#a78bfa',
     levelUp: '#7ee787',
+    damageText: '#f0f3f9',
+    critText: '#ffd34e',
     projectile: '#9ad8ff',
     projectileTrail: 'rgba(154, 216, 255, 0.3)',
     enemyShot: '#ff9f43',
@@ -77,6 +79,8 @@ export const CONFIG = {
     deathLife: 0.28,
     deathRadius: 20,
     levelUpLife: 0.7,
+    /** Цифры урона: жизнь, подъём в пикселях и потолок на экране (аура бьёт часто). */
+    damageText: { life: 0.7, rise: 34, max: 60 },
     levelUpRadius: 90,
     /** Осколки при смерти врага: количество на единицу размера, скорость и жизнь. */
     particles: {
@@ -96,8 +100,14 @@ export const CONFIG = {
     /** Сколько травмы уходит за секунду. */
     decay: 2.4,
     enemyDeath: 0.06,
+    crit: 0.05,
     playerHit: 0.45,
     playerDeath: 0.9,
+  },
+  /** Критические удары: шанс и множитель урона. */
+  crit: {
+    chance: 0.1,
+    multiplier: 2,
   },
   arsenal: {
     /** Больше оружия одновременно носить нельзя. */

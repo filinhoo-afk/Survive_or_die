@@ -7,6 +7,8 @@ import { CONFIG } from '../config.js';
 export class Effects {
   constructor() {
     this.items = [];
+    /** Сколько цифр урона сейчас живёт — для потолка. */
+    this.damageTexts = 0;
   }
 
   /** @param {number} [scale] размер вспышки относительно обычного врага */
@@ -68,6 +70,23 @@ export class Effects {
     });
   }
 
+  /** Цифра урона над врагом; крит — крупнее и золотая. */
+  damageNumber(x, y, amount, crit) {
+    const cfg = CONFIG.effects.damageText;
+    if (this.damageTexts >= cfg.max) return;
+    this.damageTexts += 1;
+    this.items.push({
+      kind: 'damage',
+      x: x + (Math.random() - 0.5) * 14,
+      y: y - 12,
+      text: crit ? `${amount}!` : String(amount),
+      color: crit ? CONFIG.colors.critText : CONFIG.colors.damageText,
+      size: crit ? 22 : 14,
+      age: 0,
+      life: cfg.life * (crit ? 1.3 : 1),
+    });
+  }
+
   update(dt) {
     for (let i = this.items.length - 1; i >= 0; i -= 1) {
       const item = this.items[i];
@@ -80,6 +99,7 @@ export class Effects {
         item.y += item.vy * dt;
       }
       if (item.age < item.life) continue;
+      if (item.kind === 'damage') this.damageTexts -= 1;
       this.items[i] = this.items[this.items.length - 1];
       this.items.pop();
     }
@@ -93,6 +113,7 @@ export class Effects {
       if (item.kind === 'burst') drawBurst(ctx, item, t);
       else if (item.kind === 'particle') drawParticle(ctx, item, t);
       else if (item.kind === 'ring') drawRing(ctx, item, t);
+      else if (item.kind === 'damage') drawDamage(ctx, item, t);
       else drawText(ctx, item, t);
     }
 
@@ -135,6 +156,20 @@ function drawRing(ctx, item, t) {
   ctx.beginPath();
   ctx.arc(item.x, item.y, item.radius * eased, 0, Math.PI * 2);
   ctx.stroke();
+}
+
+/** Цифра быстро выскакивает вверх, замедляется и тает в конце. */
+function drawDamage(ctx, item, t) {
+  const eased = 1 - (1 - t) ** 3;
+  ctx.globalAlpha = t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4;
+  ctx.font = `bold ${item.size}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#0b0e14';
+  const y = item.y - CONFIG.effects.damageText.rise * eased;
+  ctx.strokeText(item.text, item.x, y);
+  ctx.fillStyle = item.color;
+  ctx.fillText(item.text, item.x, y);
 }
 
 /** Надпись всплывает вверх и тает во второй половине жизни. */

@@ -3,7 +3,7 @@ import { createLoop } from './engine/loop.js';
 import { createInput } from './engine/input.js';
 import { Camera } from './engine/camera.js';
 import { Player } from './entities/player.js';
-import { separate } from './entities/enemy.js';
+import { separate, setHitListener } from './entities/enemy.js';
 import { Spawner } from './systems/spawner.js';
 import {
   applyContactDamage,
@@ -55,6 +55,10 @@ function newRun() {
   arsenal = new Arsenal();
   arsenal.add('cannon');
   effects = new Effects();
+  setHitListener((enemy, amount, crit) => {
+    effects.damageNumber(enemy.x, enemy.y - enemy.radius, amount, crit);
+    if (crit) camera.addShake(CONFIG.shake.crit);
+  });
   upgrades = new UpgradeState(arsenal, player);
   pendingLevels = 0;
   offers = null;

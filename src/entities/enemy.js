@@ -2,6 +2,13 @@ import { CONFIG } from '../config.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { EnemyShot } from './enemyShot.js';
 
+let hitListener = null;
+
+/** Кто хочет знать о каждом попадании по врагу (цифры урона): fn(enemy, damage, crit). */
+export function setHitListener(fn) {
+  hitListener = fn;
+}
+
 /** Враг бежит к игроку; как именно и насколько опасен — решает его тип. */
 export class Enemy {
   /** @param {number} [hpScale] множитель здоровья — растёт вместе со временем забега */
@@ -45,7 +52,11 @@ export class Enemy {
   takeHit(amount, directionX, directionY, knockbackScale = 1) {
     if (!this.alive) return false;
 
-    this.hp = Math.max(0, this.hp - amount);
+    const crit = Math.random() < CONFIG.crit.chance;
+    const dealt = Math.round(crit ? amount * CONFIG.crit.multiplier : amount);
+    hitListener?.(this, dealt, crit);
+
+    this.hp = Math.max(0, this.hp - dealt);
     this.flashFor = CONFIG.enemy.hitFlash;
 
     const push = CONFIG.enemy.knockback * knockbackScale * (1 - this.type.knockbackResist);

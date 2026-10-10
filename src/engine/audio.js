@@ -132,6 +132,12 @@ const SOUNDS = {
     tone({ type: 'square', freq: 495, duration: 0.18, volume: 0.2, delay: 0.09 });
   },
   pause: () => tone({ type: 'sine', freq: 440, freqEnd: 330, duration: 0.1, volume: 0.2 }),
+  /** Фанфара нового рекорда — вступает, когда отзвучал звук смерти. */
+  record: () => {
+    [523, 659, 784, 1047, 784, 1047].forEach((freq, i) =>
+      tone({ type: 'triangle', freq, duration: 0.2, volume: 0.25, delay: 0.9 + i * 0.11 }),
+    );
+  },
   death: () => {
     tone({ type: 'sawtooth', freq: 330, freqEnd: 40, duration: 1.0, volume: 0.35 });
     burst({ duration: 0.8, volume: 0.4, freq: 1500, freqEnd: 80 });

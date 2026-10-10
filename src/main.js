@@ -19,6 +19,9 @@ import { cardAt, drawUpgradeScreen } from './ui/upgradeScreen.js';
 import { pruneProjectiles } from './systems/weapons.js';
 import { Arsenal } from './systems/arsenal.js';
 import * as audio from './engine/audio.js';
+import { loadRecord, submitRun } from './systems/records.js';
+import { drawSummaryScreen } from './ui/summaryScreen.js';
+import { formatTime } from './ui/format.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -56,6 +59,9 @@ function newRun() {
   arsenal.add('cannon');
   effects = new Effects();
   setHitListener((enemy, amount, crit) => {
+    // В итоги идёт урон, который враг реально потерял, без перебора на добивании.
+    damageDealt += Math.min(amount, enemy.hp);
+    if (crit) crits += 1;
     effects.damageNumber(enemy.x, enemy.y - enemy.radius, amount, crit);
     if (crit) camera.addShake(CONFIG.shake.crit);
   });
@@ -65,6 +71,10 @@ function newRun() {
   hoveredCard = -1;
   elapsed = 0;
   kills = 0;
+  killsByType = {};
+  damageDealt = 0;
+  crits = 0;
+  summary = null;
 
   // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
   spawner.spawnWave(enemies, camera);
@@ -190,11 +200,30 @@ canvas.addEventListener('click', (event) => {
 
 let elapsed = 0;
 let kills = 0;
+let killsByType = {};
+let damageDealt = 0;
+let crits = 0;
+/** Итоги забега: собираются один раз в момент смерти, до этого null. */
+let summary = null;
+/** Лучшие показатели — для главного меню. */
+let record = loadRecord();
 
-/** Секунды в «м:сс» — для таймера забега. */
-function formatTime(seconds) {
-  const total = Math.floor(seconds);
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+/** Фиксирует итоги забега и обновляет рекорд. */
+function finishRun() {
+  const stats = {
+    time: elapsed,
+    kills,
+    level: player.level,
+    damage: damageDealt,
+    wave: spawner.wave,
+    crits,
+    killsByType,
+    build: upgrades.summary(),
+  };
+  const result = submitRun(stats);
+  record = result.record;
+  summary = { stats, result };
+  if (result.beaten.size > 0) audio.play('record');
 }
 
 // Мир нужен уже в меню — он рисуется на фоне.
@@ -233,6 +262,7 @@ function update(dt) {
   killed.push(...resolveProjectileHits(projectiles, enemies));
 
   kills += killed.length;
+  for (const enemy of killed) killsByType[enemy.type.id] = (killsByType[enemy.type.id] ?? 0) + 1;
   if (killed.length > 0) {
     audio.play('kill');
     camera.addShake(CONFIG.shake.enemyDeath * Math.min(killed.length, 4));
@@ -258,6 +288,8 @@ function update(dt) {
   effects.update(dt);
 
   camera.follow(player, dt);
+
+  if (!player.alive && !summary) finishRun();
 }
 
 /** Музыка тише, когда мир стоит: меню, пауза, выбор апгрейда, смерть. */
@@ -369,7 +401,7 @@ function drawHud() {
   }
 
   drawMinimap();
-  if (!player.alive) drawDefeat();
+  if (summary) drawSummaryScreen(ctx, canvas, summary);
   if (offers) {
     drawUpgradeScreen(ctx, canvas, {
       offers,
@@ -417,32 +449,6 @@ function drawHealthBar() {
   ctx.fillText(`${Math.ceil(player.hp)} / ${player.maxHp}`, x + width + 12, y + 13);
 }
 
-function drawDefeat() {
-  ctx.fillStyle = 'rgba(8, 10, 16, 0.65)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.textAlign = 'center';
-
-  ctx.fillStyle = CONFIG.colors.enemy;
-  ctx.font = 'bold 36px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText('Вы погибли', canvas.width / 2, canvas.height / 2);
-
-  ctx.fillStyle = CONFIG.colors.hud;
-  ctx.font = '15px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText(
-    `Продержались ${formatTime(elapsed)} · убийств ${kills} · уровень ${player.level}`,
-    canvas.width / 2,
-    canvas.height / 2 + 32,
-  );
-  ctx.fillText(
-    'R / Enter / клик — заново · Esc — в меню',
-    canvas.width / 2,
-    canvas.height / 2 + 60,
-  );
-
-  ctx.textAlign = 'left';
-}
-
 /** Затемняет экран и рисует крупный заголовок с подсказками под ним. */
 function drawOverlay(title, lines) {
   ctx.fillStyle = 'rgba(8, 10, 16, 0.7)';
@@ -461,10 +467,14 @@ function drawOverlay(title, lines) {
 }
 
 function drawMenu() {
-  drawOverlay('Survive or Die', [
-    'Enter / Пробел / клик — начать',
-    'WASD / стрелки — движение, оружие стреляет само',
-  ]);
+  const lines = ['Enter / Пробел / клик — начать', 'WASD / стрелки — движение, оружие стреляет само'];
+  if (record.runs > 0) {
+    lines.push(
+      '',
+      `Рекорд: ${formatTime(record.time)} · убийств ${record.kills} · уровень ${record.level}`,
+    );
+  }
+  drawOverlay('Survive or Die', lines);
 }
 
 function drawPause() {

@@ -1,6 +1,7 @@
 /**
  * Типы врагов. Класс Enemy один на всех — различаются они только данными.
  *
+ *   title           — имя для экрана итогов;
  *   from            — с какой секунды забега тип начинает появляться;
  *   weight          — относительный шанс выпасть при спавне;
  *   pack            — сколько появляется разом, кучкой;
@@ -15,6 +16,7 @@
 export const ENEMY_TYPES = {
   grunt: {
     id: 'grunt',
+    title: 'Рядовой',
     from: 0,
     radius: 13,
     /** Медленнее игрока: убежать можно, отдохнуть — нет. */
@@ -36,6 +38,7 @@ export const ENEMY_TYPES = {
   /** Рой: мелкие, быстрые, хрупкие, приходят стаей и петляют. */
   swarm: {
     id: 'swarm',
+    title: 'Рой',
     from: 20,
     radius: 8,
     speed: 175,
@@ -59,6 +62,7 @@ export const ENEMY_TYPES = {
    */
   tank: {
     id: 'tank',
+    title: 'Танк',
     from: 60,
     radius: 24,
     speed: 55,
@@ -82,6 +86,7 @@ export const ENEMY_TYPES = {
    */
   shooter: {
     id: 'shooter',
+    title: 'Стрелок',
     from: 40,
     radius: 12,
     speed: 85,

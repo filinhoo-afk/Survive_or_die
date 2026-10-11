@@ -22,6 +22,8 @@ import * as audio from './engine/audio.js';
 import { loadRecord, submitRun } from './systems/records.js';
 import { drawSummaryScreen } from './ui/summaryScreen.js';
 import { formatTime } from './ui/format.js';
+import { atlas } from './art/index.js';
+import { Animator } from './gfx/animator.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -229,7 +231,12 @@ function finishRun() {
 // Мир нужен уже в меню — он рисуется на фоне.
 newRun();
 
+/** Пока единственные спрайты в игре — герои в меню; в мир они придут на 22-й день. */
+const menuHeroes = [new Animator(atlas, 'hero.idle'), new Animator(atlas, 'hero.walk')];
+
 function update(dt) {
+  if (mode === 'menu') for (const hero of menuHeroes) hero.update(dt);
+
   // Тряска доигрывает и после смерти игрока, но замирает вместе с миром на паузе.
   if (mode === 'playing' && !offers) camera.updateShake(dt, CONFIG.shake);
 
@@ -475,6 +482,11 @@ function drawMenu() {
     );
   }
   drawOverlay('Survive or Die', lines);
+
+  const baseline = canvas.height / 2 - 80;
+  menuHeroes.forEach((hero, i) => {
+    hero.draw(ctx, canvas.width / 2 + (i === 0 ? -36 : 36), baseline, { scale: 4 });
+  });
 }
 
 function drawPause() {

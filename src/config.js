@@ -150,7 +150,7 @@ export const CONFIG = {
       intervalShrinkPerMinute: 0.4,
       minInterval: 2,
       /** Прирост потолка врагов и здоровья врагов за минуту. */
-      maxEnemiesPerMinute: 12,
+      maxEnemiesPerMinute: 6,
       hpPerMinute: 0.15,
     },
   },

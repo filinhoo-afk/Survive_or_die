@@ -231,8 +231,8 @@ function finishRun() {
 // Мир нужен уже в меню — он рисуется на фоне.
 newRun();
 
-/** Пока единственные спрайты в игре — герои в меню; в мир они придут на 22-й день. */
-const menuHeroes = [new Animator(atlas, 'hero.idle'), new Animator(atlas, 'hero.walk')];
+/** В меню герой стоит и идёт — показываем оба клипа рядом. */
+const menuHeroes = [new Animator(atlas, 'hero.idle.down'), new Animator(atlas, 'hero.walk.down')];
 
 function update(dt) {
   if (mode === 'menu') for (const hero of menuHeroes) hero.update(dt);

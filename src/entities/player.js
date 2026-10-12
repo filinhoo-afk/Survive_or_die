@@ -1,4 +1,6 @@
 import { CONFIG } from '../config.js';
+import { atlas } from '../art/index.js';
+import { Animator } from '../gfx/animator.js';
 
 /** Сколько опыта нужно, чтобы уйти с уровня level на следующий. */
 export function xpForLevel(level) {
@@ -21,6 +23,10 @@ export class Player {
     this.invulnerableFor = 0;
     /** Копится только во время неуязвимости — по нему считается мигание. */
     this.blinkClock = 0;
+    /** Сколько секунд ещё показывать красный кадр урона. */
+    this.hurtFor = 0;
+    this.moving = false;
+    this.animator = new Animator(atlas, 'hero.idle.down');
 
     this.level = 1;
     this.xp = 0;
@@ -81,7 +87,11 @@ export class Player {
     this.x += axis.x * this.speed * dt;
     this.y += axis.y * this.speed * dt;
 
-    if (axis.x !== 0 || axis.y !== 0) this.facing = axis;
+    this.moving = axis.x !== 0 || axis.y !== 0;
+    if (this.moving) this.facing = axis;
+
+    if (this.hurtFor > 0) this.hurtFor = Math.max(0, this.hurtFor - dt);
+    this.animator.update(dt);
 
     this.x = clamp(this.x, this.radius, bounds.width - this.radius);
     this.y = clamp(this.y, this.radius, bounds.height - this.radius);
@@ -97,6 +107,7 @@ export class Player {
     this.hp = Math.max(0, this.hp - dealt);
     this.invulnerableFor = CONFIG.player.invulnerability;
     this.blinkClock = 0;
+    this.hurtFor = CONFIG.player.hurtTime;
 
     if (this.hp <= 0) this.alive = false;
 
@@ -109,32 +120,29 @@ export class Player {
     return Math.floor(this.blinkClock / CONFIG.player.blinkPeriod) % 2 === 0;
   }
 
+  /** Ракурс спрайта по направлению взгляда; при равенстве осей побеждает бок. */
+  get view() {
+    const { x, y } = this.facing;
+    if (Math.abs(x) >= Math.abs(y)) return 'side';
+    return y < 0 ? 'up' : 'down';
+  }
+
+  /** Какой клип должен играть прямо сейчас: урон важнее ходьбы, ходьба — стойки. */
+  get clipName() {
+    const state = this.hurtFor > 0 || !this.alive ? 'hurt' : this.moving ? 'walk' : 'idle';
+    return `hero.${state}.${this.view}`;
+  }
+
   draw(ctx) {
     if (!this.visible) return;
 
-    ctx.save();
+    this.animator.play(this.clipName);
 
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = CONFIG.colors.player;
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = CONFIG.colors.playerOutline;
-    ctx.stroke();
-
-    // Короткий «нос» показывает, куда смотрит игрок.
-    ctx.beginPath();
-    ctx.moveTo(this.x, this.y);
-    ctx.lineTo(
-      this.x + this.facing.x * this.radius * 1.6,
-      this.y + this.facing.y * this.radius * 1.6,
-    );
-    ctx.strokeStyle = CONFIG.colors.player;
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    ctx.restore();
+    // Ноги стоят чуть ниже центра круга столкновений — тело выглядит стоящим на земле.
+    this.animator.draw(ctx, this.x, this.y + this.radius + 2, {
+      scale: CONFIG.player.spriteScale,
+      flipX: this.view === 'side' && this.facing.x < 0,
+    });
   }
 }
 

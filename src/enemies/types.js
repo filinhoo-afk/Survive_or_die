@@ -9,6 +9,7 @@
  *   knockbackResist — доля отброса, которую враг гасит;
  *   wobble          — насколько петляет на бегу, радиан;
  *   showHealthBar   — рисовать ли полоску здоровья над головой;
+ *   spriteScale     — во сколько раз увеличить пиксельный спрайт (art/enemies.js);
  *   ranged          — если задано, враг стреляет: держится на дистанции
  *                     keepDistance, раз в cooldown секунд пускает снаряд
  *                     (damage, speed), перед выстрелом windup секунд целится.
@@ -25,8 +26,7 @@ export const ENEMY_TYPES = {
     damage: 12,
     xp: 1,
     color: '#f2786a',
-    outline: '#2a100d',
-    shape: 'diamond',
+    spriteScale: 3,
     weight: 6,
     pack: 1,
     mass: 1,
@@ -46,8 +46,7 @@ export const ENEMY_TYPES = {
     damage: 5,
     xp: 1,
     color: '#f2c14e',
-    outline: '#3a2a06',
-    shape: 'dart',
+    spriteScale: 2,
     weight: 2,
     pack: 5,
     mass: 0.5,
@@ -70,8 +69,7 @@ export const ENEMY_TYPES = {
     damage: 25,
     xp: 5,
     color: '#b46ad0',
-    outline: '#2c0f38',
-    shape: 'tank',
+    spriteScale: 3,
     weight: 1,
     pack: 1,
     mass: 4,
@@ -94,8 +92,7 @@ export const ENEMY_TYPES = {
     damage: 8,
     xp: 3,
     color: '#ff9f43',
-    outline: '#4a2205',
-    shape: 'shooter',
+    spriteScale: 3,
     weight: 1.5,
     pack: 1,
     mass: 1,

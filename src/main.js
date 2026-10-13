@@ -275,6 +275,7 @@ function update(dt) {
     camera.addShake(CONFIG.shake.enemyDeath * Math.min(killed.length, 4));
   }
   for (const enemy of killed) {
+    effects.corpse(enemy);
     effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
     gems.push(new Gem(enemy.x, enemy.y, enemy.xp));
   }

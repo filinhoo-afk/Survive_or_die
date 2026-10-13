@@ -1,6 +1,8 @@
 import { CONFIG } from '../config.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { EnemyShot } from './enemyShot.js';
+import { atlas } from '../art/index.js';
+import { Animator } from '../gfx/animator.js';
 
 let hitListener = null;
 
@@ -36,6 +38,10 @@ export class Enemy {
     /** Только у стрелков: секунд до следующего прицеливания и до выстрела. */
     this.shotCooldown = type.ranged ? Math.random() * type.ranged.cooldown : 0;
     this.aimLeft = 0;
+
+    // Фаза шага случайна по той же причине, что и фаза петляния.
+    this.animator = new Animator(atlas, `${type.id}.walk`);
+    this.animator.time = Math.random();
   }
 
   /** Стрелок целится: стоит на месте и светится — игрок успевает среагировать. */
@@ -72,6 +78,7 @@ export class Enemy {
    */
   update(dt, target, shots) {
     this.age += dt;
+    this.animator.update(dt);
     if (this.flashFor > 0) this.flashFor = Math.max(0, this.flashFor - dt);
 
     const dx = target.x - this.x;
@@ -133,69 +140,25 @@ export class Enemy {
     }
   }
 
+  /** Спрайты нарисованы лицом вправо; идущий влево отражается. */
+  get facingLeft() {
+    return Math.cos(this.angle) < 0;
+  }
+
+  /** Вспышка после попадания важнее прицела, прицел — ходьбы. */
+  get clipName() {
+    const id = this.type.id;
+    if (this.flashFor > 0) return `${id}.hit`;
+    return this.aiming ? `${id}.aim` : `${id}.walk`;
+  }
+
   draw(ctx) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
-
-    const fill = this.flashFor > 0 ? CONFIG.colors.enemyFlash : this.color;
-    const r = this.radius;
-    ctx.beginPath();
-
-    if (this.type.shape === 'shooter') {
-      // Круг со стволом вперёд: «башенка», сразу видно, что стреляет.
-      ctx.arc(0, 0, r, 0, Math.PI * 2);
-    } else if (this.type.shape === 'dart') {
-      // Узкий наконечник: читается как «быстрый» ещё до того, как поедет.
-      ctx.moveTo(r * 1.5, 0);
-      ctx.lineTo(-r, r * 0.85);
-      ctx.lineTo(-r * 0.45, 0);
-      ctx.lineTo(-r, -r * 0.85);
-    } else if (this.type.shape === 'tank') {
-      // Восьмиугольник с внутренним кольцом — массивный, «бронированный».
-      for (let i = 0; i < 8; i += 1) {
-        const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-        ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-      }
-    } else {
-      // Ромб остриём вперёд — силуэт, который не спутать с круглым игроком.
-      ctx.moveTo(r * 1.3, 0);
-      ctx.lineTo(0, r * 0.8);
-      ctx.lineTo(-r * 0.9, 0);
-      ctx.lineTo(0, -r * 0.8);
-    }
-
-    ctx.closePath();
-    ctx.fillStyle = fill;
-    ctx.fill();
-    ctx.lineWidth = this.type.shape === 'tank' ? 3 : 2;
-    ctx.strokeStyle = this.type.outline;
-    ctx.stroke();
-
-    if (this.type.shape === 'tank') {
-      ctx.beginPath();
-      ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(r * 0.45, 0, 3, 0, Math.PI * 2);
-      ctx.fillStyle = this.type.outline;
-      ctx.fill();
-    }
-
-    if (this.type.shape === 'shooter') {
-      ctx.fillStyle = this.type.outline;
-      ctx.fillRect(r * 0.4, -3, r * 1.1, 6);
-      // Перед выстрелом ствол раскаляется.
-      if (this.aiming) {
-        ctx.beginPath();
-        ctx.arc(r * 1.5, 0, 5, 0, Math.PI * 2);
-        ctx.fillStyle = CONFIG.colors.enemyShot;
-        ctx.fill();
-      }
-    }
-
-    ctx.restore();
+    // Клипы одного типа поделены на кадры одинаково, шаг не сбрасывается.
+    this.animator.swap(this.clipName);
+    this.animator.draw(ctx, this.x, this.y, {
+      scale: this.type.spriteScale,
+      flipX: this.facingLeft,
+    });
 
     if (this.type.showHealthBar && this.hp < this.maxHp) this.drawHealthBar(ctx);
   }

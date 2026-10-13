@@ -1,4 +1,6 @@
 import { CONFIG } from '../config.js';
+import { atlas } from '../art/index.js';
+import { Animator } from '../gfx/animator.js';
 
 /**
  * Короткоживущие визуальные эффекты, не влияющие на игру:
@@ -22,6 +24,23 @@ export class Effects {
       age: 0,
       life: CONFIG.effects.deathLife * Math.sqrt(scale),
       radius: CONFIG.effects.deathRadius * scale,
+    });
+  }
+
+  /** Тело убитого врага: проигрывает свой клип смерти и исчезает. */
+  corpse(enemy) {
+    const animator = new Animator(atlas, `${enemy.type.id}.death`);
+    const { fps, rects } = animator.clip;
+    this.items.push({
+      kind: 'corpse',
+      x: enemy.x,
+      y: enemy.y,
+      animator,
+      scale: enemy.type.spriteScale,
+      flipX: enemy.facingLeft,
+      age: 0,
+      // Последний кадр держится ещё одну долю цикла и тает.
+      life: (rects.length + 0.5) / fps,
     });
   }
 
@@ -91,6 +110,7 @@ export class Effects {
     for (let i = this.items.length - 1; i >= 0; i -= 1) {
       const item = this.items[i];
       item.age += dt;
+      if (item.kind === 'corpse') item.animator.update(dt);
       if (item.kind === 'particle') {
         const drag = Math.exp(-4 * dt);
         item.vx *= drag;
@@ -110,7 +130,8 @@ export class Effects {
 
     for (const item of this.items) {
       const t = item.age / item.life;
-      if (item.kind === 'burst') drawBurst(ctx, item, t);
+      if (item.kind === 'corpse') drawCorpse(ctx, item, t);
+      else if (item.kind === 'burst') drawBurst(ctx, item, t);
       else if (item.kind === 'particle') drawParticle(ctx, item, t);
       else if (item.kind === 'ring') drawRing(ctx, item, t);
       else if (item.kind === 'damage') drawDamage(ctx, item, t);
@@ -119,6 +140,15 @@ export class Effects {
 
     ctx.restore();
   }
+}
+
+/** Тело стоит на месте, пока не рассыплется; в конце тает. */
+function drawCorpse(ctx, item, t) {
+  item.animator.draw(ctx, item.x, item.y, {
+    scale: item.scale,
+    flipX: item.flipX,
+    alpha: t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3,
+  });
 }
 
 /** Смерть врага: сначала белая вспышка, потом гаснущее кольцо. */

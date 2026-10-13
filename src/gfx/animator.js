@@ -25,6 +25,16 @@ export class Animator {
     this.time = 0;
   }
 
+  /**
+   * Переключает клип, не сбрасывая время: для клипов с одинаковым циклом
+   * (ходьба и её белая вспышка), когда шаг не должен начинаться заново.
+   */
+  swap(name) {
+    const time = this.time;
+    this.play(name);
+    this.time = time;
+  }
+
   update(dt) {
     this.time += dt;
   }

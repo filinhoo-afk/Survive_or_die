@@ -24,6 +24,7 @@ import { drawSummaryScreen } from './ui/summaryScreen.js';
 import { formatTime } from './ui/format.js';
 import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
+import { bakeGround } from './gfx/ground.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -32,6 +33,7 @@ canvas.width = CONFIG.width;
 canvas.height = CONFIG.height;
 
 const world = CONFIG.world;
+const groundImage = bakeGround(atlas, world, CONFIG.ground);
 const input = createInput();
 
 let player;
@@ -336,48 +338,16 @@ function render() {
 }
 
 function drawWorld() {
-  ctx.fillStyle = CONFIG.colors.background;
-  ctx.fillRect(0, 0, world.width, world.height);
-
-  drawGrid();
+  const view = camera.viewport;
+  const left = Math.max(0, Math.floor(view.left));
+  const top = Math.max(0, Math.floor(view.top));
+  const width = Math.min(world.width, Math.ceil(view.right)) - left;
+  const height = Math.min(world.height, Math.ceil(view.bottom)) - top;
+  ctx.drawImage(groundImage, left, top, width, height, left, top, width, height);
 
   ctx.strokeStyle = CONFIG.colors.border;
   ctx.lineWidth = 3;
   ctx.strokeRect(1.5, 1.5, world.width - 3, world.height - 3);
-}
-
-/** Рисует только те линии сетки, которые попадают в кадр. */
-function drawGrid() {
-  const { size, majorEvery } = CONFIG.grid;
-  const view = camera.viewport;
-
-  const firstCol = Math.max(0, Math.floor(view.left / size));
-  const lastCol = Math.min(Math.ceil(world.width / size), Math.ceil(view.right / size));
-  const firstRow = Math.max(0, Math.floor(view.top / size));
-  const lastRow = Math.min(Math.ceil(world.height / size), Math.ceil(view.bottom / size));
-
-  ctx.lineWidth = 1;
-
-  for (const major of [false, true]) {
-    ctx.strokeStyle = major ? CONFIG.colors.gridMajor : CONFIG.colors.grid;
-    ctx.beginPath();
-
-    for (let col = firstCol; col <= lastCol; col += 1) {
-      if ((col % majorEvery === 0) !== major) continue;
-      const x = col * size + 0.5;
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, world.height);
-    }
-
-    for (let row = firstRow; row <= lastRow; row += 1) {
-      if ((row % majorEvery === 0) !== major) continue;
-      const y = row * size + 0.5;
-      ctx.moveTo(0, y);
-      ctx.lineTo(world.width, y);
-    }
-
-    ctx.stroke();
-  }
 }
 
 function drawHud() {

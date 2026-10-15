@@ -10,8 +10,6 @@ export const CONFIG = {
   colors: {
     background: '#11151f',
     outside: '#080a10',
-    grid: '#1a2030',
-    gridMajor: '#232c42',
     border: '#31405e',
     player: '#7ee787',
     playerOutline: '#0b0e14',
@@ -158,9 +156,10 @@ export const CONFIG = {
     /** Чем больше, тем жёстче камера держится за игрока. */
     smoothing: 7,
   },
-  grid: {
-    size: 64,
-    /** Каждая N-я линия рисуется ярче — так виден масштаб мира. */
-    majorEvery: 4,
+  ground: {
+    /** Размер пикселя земли — как у спрайтов, чтобы пиксели были одного размера. */
+    pixelScale: 3,
+    /** Доля плиток с декором. */
+    decorChance: 0.18,
   },
 };

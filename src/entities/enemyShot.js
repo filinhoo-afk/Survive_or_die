@@ -1,4 +1,6 @@
 import { CONFIG } from '../config.js';
+import { atlas } from '../art/index.js';
+import { Animator } from '../gfx/animator.js';
 
 /**
  * Снаряд врага-стрелка. Бьёт только игрока и исчезает при попадании;
@@ -10,6 +12,7 @@ export class EnemyShot {
 
     this.x = x;
     this.y = y;
+    this.animator = new Animator(atlas, 'shot.enemy');
     this.radius = options.radius ?? defaults.radius;
     this.damage = options.damage ?? defaults.damage;
     this.lifetime = options.lifetime ?? defaults.lifetime;
@@ -29,27 +32,10 @@ export class EnemyShot {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.age += dt;
+    this.animator.update(dt);
   }
 
   draw(ctx) {
-    const tail = 0.04;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(this.x - this.vx * tail, this.y - this.vy * tail);
-    ctx.lineTo(this.x, this.y);
-    ctx.strokeStyle = CONFIG.colors.enemyShotTrail;
-    ctx.lineWidth = this.radius * 2;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = CONFIG.colors.enemyShot;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = CONFIG.colors.enemyShotOutline;
-    ctx.stroke();
-    ctx.restore();
+    this.animator.draw(ctx, this.x, this.y, { scale: Math.ceil(this.radius / 3.5) });
   }
 }

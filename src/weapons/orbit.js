@@ -1,4 +1,6 @@
 import { CONFIG } from '../config.js';
+import { atlas } from '../art/index.js';
+import { Animator } from '../gfx/animator.js';
 
 /**
  * Орбитальный щит: шары кружат вокруг игрока и бьют всех, кого задевают.
@@ -43,6 +45,7 @@ export const orbit = {
   createState: () => ({
     angle: 0,
     time: 0,
+    animator: new Animator(atlas, 'orbit.ball'),
     /** Враг → момент, когда его снова можно ударить. */
     nextHit: new WeakMap(),
   }),
@@ -50,6 +53,7 @@ export const orbit = {
   tick(weapon, dt, { player, enemies, killed }, stats) {
     const { state } = weapon;
     state.time += dt;
+    state.animator.update(dt);
     state.angle += stats.rotation * dt;
     if (!player.alive) return;
 
@@ -86,18 +90,7 @@ export const orbit = {
     ctx.setLineDash([]);
 
     for (const orb of orbPositions(stats, state, player)) {
-      ctx.beginPath();
-      ctx.arc(orb.x, orb.y, stats.orbSize, 0, Math.PI * 2);
-      ctx.fillStyle = CONFIG.colors.orbit;
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#0b0e14';
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(orb.x - 3, orb.y - 3, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#e1f5ee';
-      ctx.fill();
+      state.animator.draw(ctx, orb.x, orb.y, { scale: Math.max(1, Math.round(stats.orbSize / 4.5)) });
     }
 
     ctx.restore();

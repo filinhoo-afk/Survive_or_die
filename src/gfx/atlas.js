@@ -78,10 +78,11 @@ export function buildAtlas(defs, { maxWidth = 256, padding = 1 } = {}) {
  * @param {object} [options]
  * @param {number} [options.scale] во сколько раз увеличить пиксель
  * @param {boolean} [options.flipX] зеркально по горизонтали
+ * @param {number} [options.rotation] поворот вокруг точки (x, y), радианы
  * @param {number} [options.alpha]
  */
 export function drawFrame(ctx, atlas, rect, clipAnchor, x, y, options = {}) {
-  const { scale = 1, flipX = false, alpha = 1 } = options;
+  const { scale = 1, flipX = false, alpha = 1, rotation = 0 } = options;
   const width = rect.w * scale;
   const height = rect.h * scale;
   // Целые координаты — иначе границы пикселей «плывут» и мерцают при движении.
@@ -92,7 +93,14 @@ export function drawFrame(ctx, atlas, rect, clipAnchor, x, y, options = {}) {
   ctx.imageSmoothingEnabled = false;
   if (alpha !== 1) ctx.globalAlpha = alpha;
 
-  if (flipX) {
+  if (rotation) {
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.drawImage(
+      atlas.canvas, rect.x, rect.y, rect.w, rect.h,
+      Math.round(-width * clipAnchor.x), Math.round(-height * clipAnchor.y), width, height,
+    );
+  } else if (flipX) {
     ctx.translate(left + width, top);
     ctx.scale(-1, 1);
     ctx.drawImage(atlas.canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, width, height);

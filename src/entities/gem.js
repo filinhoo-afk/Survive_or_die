@@ -1,4 +1,6 @@
 import { CONFIG } from '../config.js';
+import { atlas } from '../art/index.js';
+import { Animator } from '../gfx/animator.js';
 
 /**
  * Кристалл опыта. Лежит на месте смерти врага, пока игрок не подойдёт
@@ -11,6 +13,7 @@ export class Gem {
     this.value = value;
     /** Крупный кристалл от толстого врага — больше и другого цвета. */
     this.big = value >= 5;
+    this.animator = new Animator(atlas, this.big ? 'gem.big' : 'gem.small');
     this.radius = this.big ? CONFIG.gem.radius * 1.6 : CONFIG.gem.radius;
     this.pulled = false;
     this.speed = 0;
@@ -50,33 +53,7 @@ export class Gem {
 
   draw(ctx) {
     const bob = this.pulled ? 0 : Math.sin(this.age * 4) * 1.5;
-    const x = this.x;
-    const y = this.y + bob;
-    const r = this.radius;
-
-    ctx.save();
-
-    ctx.beginPath();
-    ctx.moveTo(x, y - r * 1.4);
-    ctx.lineTo(x + r, y);
-    ctx.lineTo(x, y + r * 1.4);
-    ctx.lineTo(x - r, y);
-    ctx.closePath();
-    ctx.fillStyle = this.big ? CONFIG.colors.gemBig : CONFIG.colors.gem;
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = CONFIG.colors.gemOutline;
-    ctx.stroke();
-
-    // Светлая верхняя грань — без неё ромб читается как плоская метка.
-    ctx.beginPath();
-    ctx.moveTo(x, y - r * 1.4);
-    ctx.lineTo(x + r * 0.55, y - r * 0.2);
-    ctx.lineTo(x - r * 0.55, y - r * 0.2);
-    ctx.closePath();
-    ctx.fillStyle = this.big ? CONFIG.colors.gemBigLight : CONFIG.colors.gemLight;
-    ctx.fill();
-
-    ctx.restore();
+    this.animator.time = this.age;
+    this.animator.draw(ctx, this.x, this.y + bob, { scale: 2 });
   }
 }

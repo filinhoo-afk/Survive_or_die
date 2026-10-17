@@ -25,6 +25,7 @@ import { formatTime } from './ui/format.js';
 import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
 import { bakeGround } from './gfx/ground.js';
+import { createLighting } from './gfx/lighting.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -34,6 +35,7 @@ canvas.height = CONFIG.height;
 
 const world = CONFIG.world;
 const groundImage = bakeGround(atlas, world, CONFIG.ground);
+const lighting = createLighting(canvas.width, canvas.height, CONFIG.lighting);
 const input = createInput();
 
 let player;
@@ -330,11 +332,28 @@ function render() {
 
   ctx.restore();
 
+  drawLighting();
+
   if (mode === 'menu') drawMenu();
   else {
     drawHud();
     if (mode === 'paused') drawPause();
   }
+}
+
+/** Собирает источники света сцены и накладывает тьму поверх мира. */
+function drawLighting() {
+  const cfg = CONFIG.lighting;
+  const lights = [{ x: player.x, y: player.y, ...cfg.player }];
+  for (const shot of projectiles) lights.push({ x: shot.x, y: shot.y, ...cfg.projectile });
+  for (const shot of enemyShots) lights.push({ x: shot.x, y: shot.y, ...cfg.enemyShot });
+  for (const gem of gems) lights.push({ x: gem.x, y: gem.y, ...cfg.gem });
+  lighting.draw(
+    ctx,
+    lights,
+    Math.round(camera.x + camera.shakeX),
+    Math.round(camera.y + camera.shakeY),
+  );
 }
 
 function drawWorld() {

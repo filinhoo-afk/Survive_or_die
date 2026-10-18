@@ -26,6 +26,7 @@ import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
 import { bakeGround } from './gfx/ground.js';
 import { createLighting } from './gfx/lighting.js';
+import { drawShadow, sortByDepth } from './gfx/shadows.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -320,14 +321,15 @@ function render() {
   camera.apply(ctx);
 
   drawWorld();
+  drawShadows();
   for (const gem of gems) gem.draw(ctx);
   const scene = { player, enemies };
   arsenal.draw(ctx, scene, 'under');
-  for (const enemy of enemies) enemy.draw(ctx);
   effects.draw(ctx);
+  // Враги и игрок — в одном списке: кто ниже на экране, тот рисуется поверх.
+  for (const body of sortByDepth([player, ...enemies])) body.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
   for (const shot of enemyShots) shot.draw(ctx);
-  player.draw(ctx);
   arsenal.draw(ctx, scene, 'over');
 
   ctx.restore();
@@ -354,6 +356,14 @@ function drawLighting() {
     Math.round(camera.x + camera.shakeX),
     Math.round(camera.y + camera.shakeY),
   );
+}
+
+/** Тени всех, кто стоит на земле, — одним слоем под спрайтами. */
+function drawShadows() {
+  const cfg = CONFIG.shadows;
+  for (const gem of gems) drawShadow(ctx, gem.x, gem.y + 8, cfg.gemRadius, cfg);
+  for (const enemy of enemies) drawShadow(ctx, enemy.x, enemy.footY, enemy.radius, cfg);
+  if (player.visible) drawShadow(ctx, player.x, player.footY, player.radius, cfg);
 }
 
 function drawWorld() {

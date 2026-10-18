@@ -133,13 +133,17 @@ export class Player {
     return `hero.${state}.${this.view}`;
   }
 
+  get footY() {
+    return this.y + this.radius + 2;
+  }
+
   draw(ctx) {
     if (!this.visible) return;
 
     this.animator.play(this.clipName);
 
     // Ноги стоят чуть ниже центра круга столкновений — тело выглядит стоящим на земле.
-    this.animator.draw(ctx, this.x, this.y + this.radius + 2, {
+    this.animator.draw(ctx, this.x, this.footY, {
       scale: CONFIG.player.spriteScale,
       flipX: this.view === 'side' && this.facing.x < 0,
     });

@@ -152,6 +152,11 @@ export class Enemy {
     return this.aiming ? `${id}.aim` : `${id}.walk`;
   }
 
+  /** Где враг стоит ногами: спрайт центрирован на теле, ноги ниже на радиус. */
+  get footY() {
+    return this.y + this.radius;
+  }
+
   draw(ctx) {
     // Клипы одного типа поделены на кадры одинаково, шаг не сбрасывается.
     this.animator.swap(this.clipName);

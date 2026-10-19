@@ -27,6 +27,7 @@ import { Animator } from './gfx/animator.js';
 import { bakeGround } from './gfx/ground.js';
 import { createLighting } from './gfx/lighting.js';
 import { drawShadow, sortByDepth } from './gfx/shadows.js';
+import { drawText, textHeight, wrapText } from './gfx/font.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -382,30 +383,18 @@ function drawWorld() {
 function drawHud() {
   ctx.save();
 
-  drawHealthBar();
-
   drawXpBar();
+  drawHealthBar();
+  drawStats();
 
-  ctx.fillStyle = CONFIG.colors.hud;
-  ctx.font = '14px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText(
-    `Уровень ${player.level} · опыт ${player.xp} / ${player.xpToNext}`,
-    16,
-    60,
-  );
-  ctx.fillText(`Время: ${formatTime(elapsed)} · убийств: ${kills}`, 16, 80);
-  ctx.fillText(`Врагов: ${enemies.length} · кристаллов: ${gems.length}`, 16, 100);
-  ctx.fillText(
-    `Волна ${spawner.wave} · следующая через ${spawner.timeToNextWave.toFixed(1)} с`,
-    16,
-    120,
-  );
-
-  const taken = upgrades.summary();
-  if (taken) {
-    ctx.fillStyle = CONFIG.colors.hud;
-    ctx.fillText(taken, 16, 140);
-  }
+  // Таймер забега по центру под полосой опыта.
+  const colors = CONFIG.colors;
+  drawText(ctx, formatTime(elapsed), canvas.width / 2, 16, {
+    scale: 4,
+    align: 'center',
+    color: colors.hudText,
+    shadow: colors.hudShadow,
+  });
 
   drawMinimap();
   if (summary) drawSummaryScreen(ctx, canvas, summary);
@@ -420,40 +409,86 @@ function drawHud() {
   ctx.restore();
 }
 
+/** Рамка полосы: тёмная подложка, цветная заливка и светлая окантовка в пиксель. */
+function drawBar(x, y, width, height, ratio, fill) {
+  const colors = CONFIG.colors;
+  ctx.fillStyle = colors.playerOutline;
+  ctx.fillRect(x - 2, y - 2, width + 4, height + 4);
+  ctx.fillStyle = colors.hpBarBack;
+  ctx.fillRect(x, y, width, height);
+
+  const filled = Math.round(width * Math.max(0, Math.min(1, ratio)));
+  ctx.fillStyle = fill;
+  ctx.fillRect(x, y, filled, height);
+  // Блик сверху придаёт полосе объём.
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+  ctx.fillRect(x, y, filled, 2);
+
+  ctx.strokeStyle = colors.hudBevel;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - 1.5, y - 1.5, width + 3, height + 3);
+}
+
 /** Полоса опыта во всю ширину по верхнему краю экрана. */
 function drawXpBar() {
   const height = 6;
   ctx.fillStyle = CONFIG.colors.hpBarBack;
   ctx.fillRect(0, 0, canvas.width, height);
+  const filled = Math.round(canvas.width * player.xpRatio);
   ctx.fillStyle = CONFIG.colors.xpBar;
-  ctx.fillRect(0, 0, canvas.width * player.xpRatio, height);
+  ctx.fillRect(0, 0, filled, height);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.fillRect(0, 0, filled, 2);
+  ctx.fillStyle = CONFIG.colors.playerOutline;
+  ctx.fillRect(0, height, canvas.width, 2);
 }
 
 function drawHealthBar() {
-  const x = 16;
-  const y = 16;
+  const colors = CONFIG.colors;
+  const x = 18;
+  const y = 22;
   const width = 220;
-  const height = 16;
+  const height = 20;
   const ratio = player.hpRatio;
+  const fill =
+    ratio > 0.5 ? colors.hpBar : ratio > 0.25 ? colors.hpBarLow : colors.hpBarCritical;
 
-  ctx.fillStyle = CONFIG.colors.hpBarBack;
-  ctx.fillRect(x, y, width, height);
+  drawBar(x, y, width, height, ratio, fill);
+  drawText(ctx, `${Math.ceil(player.hp)}/${player.maxHp}`, x + width / 2, y + 3, {
+    scale: 2,
+    align: 'center',
+    color: colors.hudText,
+    shadow: colors.hudShadow,
+  });
+}
 
-  ctx.fillStyle =
-    ratio > 0.5
-      ? CONFIG.colors.hpBar
-      : ratio > 0.25
-        ? CONFIG.colors.hpBarLow
-        : CONFIG.colors.hpBarCritical;
-  ctx.fillRect(x, y, width * ratio, height);
+/** Столбец текста под здоровьем: уровень, убийства, волна и собранный билд. */
+function drawStats() {
+  const colors = CONFIG.colors;
+  const scale = 2;
+  const lineHeight = textHeight(scale) + 6;
+  const x = 18;
+  let y = 56;
 
-  ctx.strokeStyle = CONFIG.colors.border;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
+  const rows = [
+    [`УР ${player.level}`, `ОПЫТ ${player.xp}/${player.xpToNext}`],
+    [`УБИЙСТВ ${kills}`, `ВРАГОВ ${enemies.length}`],
+    [`ВОЛНА ${spawner.wave}`, `ЧЕРЕЗ ${spawner.timeToNextWave.toFixed(1)} С`],
+  ];
+  for (const [main, extra] of rows) {
+    drawText(ctx, main, x, y, { scale, color: colors.hudText, shadow: colors.hudShadow });
+    drawText(ctx, extra, x + 130, y, { scale, color: colors.hudDim, shadow: colors.hudShadow });
+    y += lineHeight;
+  }
 
-  ctx.fillStyle = CONFIG.colors.hud;
-  ctx.font = '14px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText(`${Math.ceil(player.hp)} / ${player.maxHp}`, x + width + 12, y + 13);
+  const taken = upgrades.summary();
+  if (taken) {
+    y += 4;
+    for (const line of wrapText(taken, 300, 2)) {
+      drawText(ctx, line, x, y, { scale: 2, color: colors.hudDim, shadow: colors.hudShadow });
+      y += textHeight(2) + 4;
+    }
+  }
 }
 
 /** Затемняет экран и рисует крупный заголовок с подсказками под ним. */

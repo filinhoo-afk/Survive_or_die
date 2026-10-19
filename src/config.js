@@ -40,6 +40,11 @@ export const CONFIG = {
     hpBarCritical: '#f2786a',
     hpBarBack: '#20283a',
     hud: '#6e7681',
+    hudText: '#f0f3f9',
+    hudDim: '#9aa6bd',
+    hudShadow: '#05060c',
+    hudPanel: 'rgba(8, 10, 16, 0.6)',
+    hudBevel: '#4a5b82',
   },
   player: {
     radius: 14,

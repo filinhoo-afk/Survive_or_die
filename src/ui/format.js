@@ -6,5 +6,6 @@ export function formatTime(seconds) {
 
 /** Крупные числа с пробелами между разрядами: 12 345. */
 export function formatNumber(value) {
-  return Math.round(value).toLocaleString('ru-RU');
+  // Локаль даёт неразрывный пробел, которого нет в пиксельном шрифте.
+  return Math.round(value).toLocaleString('ru-RU').replace(/\s/g, ' ');
 }

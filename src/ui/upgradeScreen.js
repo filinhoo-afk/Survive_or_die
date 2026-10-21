@@ -1,6 +1,7 @@
 import { atlas } from '../art/index.js';
 import { drawFrame } from '../gfx/atlas.js';
 import { drawText, measureText, textHeight, wrapText } from '../gfx/font.js';
+import { UI_COLORS, pixelPanel } from './panel.js';
 
 const CARD_WIDTH = 240;
 const CARD_HEIGHT = 250;
@@ -9,17 +10,7 @@ const CARD_TOP = 165;
 const ICON_SCALE = 4;
 const PIXEL = 4;
 
-const COLORS = {
-  veil: 'rgba(8, 10, 16, 0.74)',
-  panel: '#161c2b',
-  panelHover: '#1d2537',
-  border: '#31405e',
-  well: '#0b0e14',
-  text: '#c9d1d9',
-  dim: '#8b98ab',
-  title: '#f5f7fb',
-  accent: '#7ee787',
-};
+const COLORS = UI_COLORS;
 
 /** Прямоугольники карточек — общие для отрисовки и для попадания мышью. */
 export function cardRects(count, canvas) {
@@ -63,15 +54,6 @@ export function drawUpgradeScreen(ctx, canvas, { offers, hovered, level }) {
   });
 
   ctx.restore();
-}
-
-/** Прямоугольник со «срезанными» углами — так рамки выглядят пиксельными. */
-function pixelPanel(ctx, x, y, width, height, fill, border, step = PIXEL) {
-  ctx.fillStyle = border;
-  ctx.fillRect(x + step, y, width - step * 2, height);
-  ctx.fillRect(x, y + step, width, height - step * 2);
-  ctx.fillStyle = fill;
-  ctx.fillRect(x + step, y + step, width - step * 2, height - step * 2);
 }
 
 function drawCard(ctx, rect, card, index, hovered) {

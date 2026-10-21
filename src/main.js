@@ -22,6 +22,8 @@ import * as audio from './engine/audio.js';
 import { loadRecord, submitRun } from './systems/records.js';
 import { drawSummaryScreen } from './ui/summaryScreen.js';
 import { formatTime } from './ui/format.js';
+import { drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
+import { createTransition } from './ui/transition.js';
 import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
 import { bakeGround } from './gfx/ground.js';
@@ -116,10 +118,21 @@ function pickCard(index) {
 
 const CHOICE_KEYS = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 };
 
+const transition = createTransition();
+
 function startRun() {
   newRun();
   mode = 'playing';
   audio.play('start');
+}
+
+/** Старт забега и выход в меню идут через затемнение. */
+function startRunFaded() {
+  transition.go(startRun);
+}
+
+function menuFaded() {
+  transition.go(() => setMode('menu'));
 }
 
 function setMode(next) {
@@ -139,14 +152,16 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
+  if (transition.busy) return;
+
   if (mode === 'menu') {
-    if (event.code === 'Enter' || event.code === 'Space') startRun();
+    if (event.code === 'Enter' || event.code === 'Space') startRunFaded();
     return;
   }
 
   if (!player.alive) {
-    if (event.code === 'KeyR' || event.code === 'Enter') startRun();
-    else if (event.code === 'Escape') setMode('menu');
+    if (event.code === 'KeyR' || event.code === 'Enter') startRunFaded();
+    else if (event.code === 'Escape') menuFaded();
     return;
   }
 
@@ -158,9 +173,9 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'Escape' || event.code === 'KeyP') {
     setMode(mode === 'paused' ? 'playing' : 'paused');
   } else if (mode === 'paused' && event.code === 'KeyR') {
-    startRun();
+    startRunFaded();
   } else if (mode === 'paused' && event.code === 'KeyM') {
-    setMode('menu');
+    menuFaded();
   }
 });
 
@@ -188,8 +203,9 @@ canvas.addEventListener('mousemove', (event) => {
 canvas.addEventListener('click', (event) => {
   audio.unlock();
   audio.startMusic();
+  if (transition.busy) return;
   if (mode === 'menu') {
-    startRun();
+    startRunFaded();
     return;
   }
   if (mode === 'paused') {
@@ -197,7 +213,7 @@ canvas.addEventListener('click', (event) => {
     return;
   }
   if (!player.alive) {
-    startRun();
+    startRunFaded();
     return;
   }
   if (!offers) return;
@@ -241,6 +257,7 @@ newRun();
 const menuHeroes = [new Animator(atlas, 'hero.idle.down'), new Animator(atlas, 'hero.walk.down')];
 
 function update(dt) {
+  transition.update(dt);
   if (mode === 'menu') for (const hero of menuHeroes) hero.update(dt);
 
   // Тряска доигрывает и после смерти игрока, но замирает вместе с миром на паузе.
@@ -340,8 +357,9 @@ function render() {
   if (mode === 'menu') drawMenu();
   else {
     drawHud();
-    if (mode === 'paused') drawPause();
+    if (mode === 'paused') drawPauseScreen(ctx, canvas);
   }
+  transition.draw(ctx, canvas);
 }
 
 /** Собирает источники света сцены и накладывает тьму поверх мира. */
@@ -491,41 +509,11 @@ function drawStats() {
   }
 }
 
-/** Затемняет экран и рисует крупный заголовок с подсказками под ним. */
-function drawOverlay(title, lines) {
-  ctx.fillStyle = 'rgba(8, 10, 16, 0.7)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = CONFIG.colors.hud;
-  ctx.font = 'bold 40px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 20);
-
-  ctx.font = '16px "Segoe UI", system-ui, sans-serif';
-  lines.forEach((line, i) => {
-    ctx.fillText(line, canvas.width / 2, canvas.height / 2 + 20 + i * 26);
-  });
-  ctx.textAlign = 'left';
-}
-
 function drawMenu() {
-  const lines = ['Enter / Пробел / клик — начать', 'WASD / стрелки — движение, оружие стреляет само'];
-  if (record.runs > 0) {
-    lines.push(
-      '',
-      `Рекорд: ${formatTime(record.time)} · убийств ${record.kills} · уровень ${record.level}`,
-    );
-  }
-  drawOverlay('Survive or Die', lines);
-
-  const baseline = canvas.height / 2 - 80;
+  drawMenuScreen(ctx, canvas, record);
   menuHeroes.forEach((hero, i) => {
-    hero.draw(ctx, canvas.width / 2 + (i === 0 ? -36 : 36), baseline, { scale: 4 });
+    hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });
-}
-
-function drawPause() {
-  drawOverlay('Пауза', ['Esc / P / клик — продолжить', 'R — заново · M — в меню']);
 }
 
 /** Миникарта в углу: где игрок и куда смотрит камера. */

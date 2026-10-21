@@ -1,18 +1,11 @@
 import { ENEMY_TYPE_LIST } from '../enemies/types.js';
+import { drawText, measureText, textHeight, wrapText } from '../gfx/font.js';
 import { formatNumber, formatTime } from './format.js';
+import { UI_COLORS as C, pixelPanel } from './panel.js';
 
-const FONT = '"Segoe UI", system-ui, sans-serif';
-const PANEL_WIDTH = 560;
+const PANEL_WIDTH = 580;
 const ROW_HEIGHT = 30;
-
-const COLORS = {
-  title: '#f2786a',
-  text: '#c9d1d9',
-  muted: '#8b98ab',
-  record: '#ffd34e',
-  panel: '#161c2b',
-  border: '#31405e',
-};
+const SCALE = 2;
 
 /** Строки таблицы: показатели с рекордом и справочные без него. */
 const ROWS = [
@@ -36,73 +29,60 @@ export function drawSummaryScreen(ctx, canvas, summary) {
   ctx.fillStyle = 'rgba(8, 10, 16, 0.78)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.textAlign = 'center';
-  ctx.fillStyle = COLORS.title;
-  ctx.font = `bold 34px ${FONT}`;
-  ctx.fillText('Вы погибли', cx, 62);
+  drawText(ctx, 'ВЫ ПОГИБЛИ', cx, 28, { scale: 5, align: 'center', color: C.danger });
 
-  ctx.font = `15px ${FONT}`;
   if (result.beaten.size > 0) {
-    // Мягкая пульсация — новый рекорд должен бросаться в глаза.
-    const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 180);
-    ctx.globalAlpha = pulse;
-    ctx.fillStyle = COLORS.record;
-    ctx.font = `bold 17px ${FONT}`;
-    ctx.fillText('★ Новый рекорд! ★', cx, 90);
-    ctx.globalAlpha = 1;
+    // Мигание — новый рекорд должен бросаться в глаза.
+    const color = Math.floor(performance.now() / 260) % 2 === 0 ? C.record : '#fff1b0';
+    drawText(ctx, '+ НОВЫЙ РЕКОРД +', cx, 76, { scale: 3, align: 'center', color });
   } else {
-    ctx.fillStyle = COLORS.muted;
-    ctx.fillText(`Забег № ${result.record.runs}`, cx, 90);
+    drawText(ctx, `Забег № ${result.record.runs}`, cx, 80, { scale: SCALE, align: 'center', color: C.dim });
   }
 
   const left = cx - PANEL_WIDTH / 2;
-  const top = 108;
+  const top = 106;
   const kills = killsLine(stats.killsByType);
-  const build = wrap(ctx, stats.build || 'без улучшений', PANEL_WIDTH - 40);
-  const height = 40 + ROWS.length * ROW_HEIGHT + 26 + (kills.length > 0 ? 34 : 0) + build.length * 20 + 8;
+  const build = wrapText(stats.build || 'без улучшений', PANEL_WIDTH - 48, SCALE);
+  const buildHeight = textHeight(SCALE) + 4;
+  const killsHeight = kills.length > 0 ? 12 + killRows(kills) * 22 : 0;
+  const height = 42 + ROWS.length * ROW_HEIGHT + 28 + killsHeight + build.length * buildHeight + 8;
 
-  ctx.beginPath();
-  ctx.roundRect(left, top, PANEL_WIDTH, height, 12);
-  ctx.fillStyle = COLORS.panel;
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = COLORS.border;
-  ctx.stroke();
+  pixelPanel(ctx, left, top, PANEL_WIDTH, height, C.panel, C.border);
 
   // Шапка таблицы.
   const labelX = left + 24;
-  const valueX = left + 340;
+  const valueX = left + 360;
   const recordX = left + PANEL_WIDTH - 24;
-  let y = top + 30;
-  ctx.font = `12px ${FONT}`;
-  ctx.fillStyle = COLORS.muted;
-  ctx.textAlign = 'right';
-  ctx.fillText('ЭТОТ ЗАБЕГ', valueX, y);
-  ctx.fillText('РЕКОРД', recordX, y);
+  let y = top + 18;
+  drawText(ctx, 'ЭТОТ ЗАБЕГ', valueX, y, { scale: SCALE, align: 'right', color: C.dim });
+  drawText(ctx, 'РЕКОРД', recordX, y, { scale: SCALE, align: 'right', color: C.dim });
 
+  y += 20;
   for (const row of ROWS) {
-    y += ROW_HEIGHT;
     drawRow(ctx, row, stats, result, { labelX, valueX, recordX, y });
+    y += ROW_HEIGHT;
   }
 
-  y += 30;
-  ctx.textAlign = 'left';
+  y += 4;
+  ctx.fillStyle = C.border;
+  ctx.fillRect(labelX, y, PANEL_WIDTH - 48, 2);
+  y += 14;
+
   if (kills.length > 0) {
     drawKills(ctx, kills, labelX, y);
-    y += 34;
+    y += killsHeight;
   }
 
-  ctx.font = `13px ${FONT}`;
-  ctx.fillStyle = COLORS.muted;
   for (const line of build) {
-    ctx.fillText(line, labelX, y);
-    y += 20;
+    drawText(ctx, line, labelX, y, { scale: SCALE, color: C.dim });
+    y += buildHeight;
   }
 
-  ctx.textAlign = 'center';
-  ctx.fillStyle = COLORS.muted;
-  ctx.font = `15px ${FONT}`;
-  ctx.fillText('R / Enter / клик — заново · Esc — в меню', cx, canvas.height - 24);
+  drawText(ctx, 'R / Enter / клик — заново · Esc — в меню', cx, canvas.height - 34, {
+    scale: SCALE,
+    align: 'center',
+    color: Math.floor(performance.now() / 520) % 2 === 0 ? C.accent : C.dim,
+  });
 
   ctx.restore();
 }
@@ -110,26 +90,27 @@ export function drawSummaryScreen(ctx, canvas, summary) {
 function drawRow(ctx, row, stats, result, { labelX, valueX, recordX, y }) {
   const beaten = result.beaten.has(row.field);
 
-  ctx.textAlign = 'left';
-  ctx.font = `15px ${FONT}`;
-  ctx.fillStyle = COLORS.muted;
-  ctx.fillText(row.label, labelX, y);
-
-  ctx.textAlign = 'right';
-  ctx.font = `bold 17px ${FONT}`;
-  ctx.fillStyle = beaten ? COLORS.record : COLORS.text;
-  ctx.fillText(row.format(stats[row.field]), valueX, y);
-
+  drawText(ctx, row.label, labelX, y + 4, { scale: SCALE, color: C.dim });
+  drawText(ctx, row.format(stats[row.field]), valueX, y, {
+    scale: 3,
+    align: 'right',
+    color: beaten ? C.record : C.text,
+  });
   // Справочные строки без рекорда — колонку справа оставляем пустой.
   if (!(row.field in result.record)) return;
 
-  ctx.font = `15px ${FONT}`;
   if (beaten) {
-    ctx.fillStyle = COLORS.record;
-    ctx.fillText(`★ было ${row.format(result.previous[row.field])}`, recordX, y);
+    drawText(ctx, `было ${row.format(result.previous[row.field])}`, recordX, y + 4, {
+      scale: SCALE,
+      align: 'right',
+      color: C.record,
+    });
   } else {
-    ctx.fillStyle = COLORS.muted;
-    ctx.fillText(row.format(result.record[row.field]), recordX, y);
+    drawText(ctx, row.format(result.record[row.field]), recordX, y + 4, {
+      scale: SCALE,
+      align: 'right',
+      color: C.dim,
+    });
   }
 }
 
@@ -141,37 +122,41 @@ function killsLine(killsByType) {
   }));
 }
 
-function drawKills(ctx, kills, x, y) {
-  ctx.font = `14px ${FONT}`;
-  for (const { type, count } of kills) {
-    ctx.fillStyle = type.color;
-    ctx.beginPath();
-    ctx.arc(x + 6, y - 5, 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = COLORS.text;
-    const text = `${type.title} × ${formatNumber(count)}`;
-    ctx.fillText(text, x + 18, y);
-    x += 18 + ctx.measureText(text).width + 22;
-  }
+function killLabel({ type, count }) {
+  return `${type.title} x${formatNumber(count)}`;
 }
 
-/** Разбивает сводку сборки «A · B · C» на строки, не разрывая пункты. */
-function wrap(ctx, text, maxWidth) {
-  ctx.save();
-  ctx.font = `13px ${FONT}`;
-  const lines = [];
-  let line = '';
-  for (const part of text.split(' · ')) {
-    const candidate = line ? `${line} · ${part}` : part;
-    if (line && ctx.measureText(candidate).width > maxWidth) {
-      lines.push(line);
-      line = part;
-    } else {
-      line = candidate;
+const KILL_ROOM = PANEL_WIDTH - 48;
+
+function killWidth(kill) {
+  return 20 + measureText(killLabel(kill), SCALE);
+}
+
+function killRows(kills) {
+  let rows = 1;
+  let x = 0;
+  for (const kill of kills) {
+    if (x > 0 && x + killWidth(kill) > KILL_ROOM) {
+      rows += 1;
+      x = 0;
     }
+    x += killWidth(kill) + 18;
   }
-  if (line) lines.push(line);
-  ctx.restore();
-  return lines;
+  return rows;
+}
+
+/** Убитые по типам в строку; не влезшие переносятся. Возвращает нижнюю границу. */
+function drawKills(ctx, kills, x, y) {
+  const startX = x;
+  for (const { type, count } of kills) {
+    if (x > startX && x - startX + killWidth({ type, count }) > KILL_ROOM) {
+      x = startX;
+      y += 22;
+    }
+    ctx.fillStyle = type.color;
+    ctx.fillRect(x, y + 1, 12, 12);
+
+    drawText(ctx, killLabel({ type, count }), x + 20, y, { scale: SCALE, color: C.text });
+    x += killWidth({ type, count }) + 18;
+  }
 }

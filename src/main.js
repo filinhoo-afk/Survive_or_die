@@ -26,6 +26,7 @@ import { drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
 import { createTransition } from './ui/transition.js';
 import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
+import { DEFAULT_LOCATION } from './locations/index.js';
 import { bakeGround } from './gfx/ground.js';
 import { createLighting } from './gfx/lighting.js';
 import { drawShadow, sortByDepth } from './gfx/shadows.js';
@@ -37,8 +38,10 @@ const ctx = canvas.getContext('2d');
 canvas.width = CONFIG.width;
 canvas.height = CONFIG.height;
 
-const world = CONFIG.world;
-const groundImage = bakeGround(atlas, world, CONFIG.ground);
+/** Текущая локация: мир, земля и враги берутся из её данных. */
+const location = DEFAULT_LOCATION;
+const world = location.world;
+const groundImage = bakeGround(atlas, location, CONFIG.ground.pixelScale);
 const lighting = createLighting(canvas.width, canvas.height, CONFIG.lighting);
 const input = createInput();
 
@@ -64,7 +67,7 @@ function newRun() {
   projectiles = [];
   enemyShots = [];
   gems = [];
-  spawner = new Spawner(world);
+  spawner = new Spawner(world, location.enemies);
   arsenal = new Arsenal();
   arsenal.add('cannon');
   effects = new Effects();
@@ -332,7 +335,7 @@ function syncMusic() {
 function render() {
   syncMusic();
   // Фон за пределами мира — чтобы край был виден, а не обрывался в пустоту.
-  ctx.fillStyle = CONFIG.colors.outside;
+  ctx.fillStyle = location.colors.outside;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
@@ -393,7 +396,7 @@ function drawWorld() {
   const height = Math.min(world.height, Math.ceil(view.bottom)) - top;
   ctx.drawImage(groundImage, left, top, width, height, left, top, width, height);
 
-  ctx.strokeStyle = CONFIG.colors.border;
+  ctx.strokeStyle = location.colors.border;
   ctx.lineWidth = 3;
   ctx.strokeRect(1.5, 1.5, world.width - 3, world.height - 3);
 }
@@ -526,7 +529,7 @@ function drawMinimap() {
 
   ctx.fillStyle = 'rgba(8, 10, 16, 0.75)';
   ctx.fillRect(x, y, width, height);
-  ctx.strokeStyle = CONFIG.colors.border;
+  ctx.strokeStyle = location.colors.border;
   ctx.lineWidth = 1;
   ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
 

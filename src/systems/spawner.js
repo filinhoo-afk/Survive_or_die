@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { Enemy } from '../entities/enemy.js';
-import { ENEMY_TYPE_LIST } from '../enemies/types.js';
+import { ENEMY_TYPES } from '../enemies/types.js';
 
 /** Разброс стаи вокруг точки появления, пикселей. */
 const PACK_SPREAD = 28;
@@ -10,9 +10,10 @@ const PACK_SPREAD = 28;
  * а не появлялись из воздуха на глазах у игрока.
  */
 export class Spawner {
-  constructor(world, config = CONFIG.spawner, types = ENEMY_TYPE_LIST) {
+  constructor(world, enemyIds, config = CONFIG.spawner) {
     this.world = world;
-    this.types = types;
+    /** Враги текущей локации. */
+    this.types = enemyIds.map((id) => ENEMY_TYPES[id]);
     this.baseInterval = config.interval;
     this.baseWaveSize = config.waveSize;
     this.baseMaxEnemies = config.maxEnemies;

@@ -1,7 +1,9 @@
+import { LOCATION_LIST } from '../locations/index.js';
+
 /**
  * Земля: плитки 16×16 и мелкий декор.
  *
- *   ground.0…ground.3 — четыре варианта травяной плитки;
+ *   ground.<локация>.0…3 — четыре варианта плитки для каждой локации;
  *   decor.tuft / decor.stone / decor.bone / decor.skull — украшения поверх земли.
  *
  * Плитки собираются кодом из зерна: основа одного цвета и россыпь пятен,
@@ -10,13 +12,6 @@
 
 export const TILE_PX = 16;
 export const GROUND_VARIANTS = 4;
-
-const GROUND_PALETTE = {
-  a: '#1b2418',
-  b: '#1f2a1b',
-  c: '#17201a',
-  d: '#243020',
-};
 
 /** Небольшой детерминированный генератор — чтобы плитки не менялись между запусками. */
 function mulberry32(seed) {
@@ -94,21 +89,15 @@ const DECOR_PALETTE = {
 
 export const TERRAIN_CLIPS = {
   ...Object.fromEntries(
-    Array.from({ length: GROUND_VARIANTS }, (_, i) => [
-      `ground.${i}`,
-      { palette: GROUND_PALETTE, frames: [buildGroundTile(i)], anchor: { x: 0, y: 0 } },
-    ]),
+    LOCATION_LIST.flatMap((location) =>
+      Array.from({ length: GROUND_VARIANTS }, (_, i) => [
+        `ground.${location.id}.${i}`,
+        { palette: location.ground.palette, frames: [buildGroundTile(i)], anchor: { x: 0, y: 0 } },
+      ]),
+    ),
   ),
   'decor.tuft': { palette: DECOR_PALETTE, frames: [TUFT] },
   'decor.stone': { palette: DECOR_PALETTE, frames: [STONE] },
   'decor.bone': { palette: DECOR_PALETTE, frames: [BONE] },
   'decor.skull': { palette: DECOR_PALETTE, frames: [SKULL] },
 };
-
-/** Декор и его вес: травы много, черепа — редкость. */
-export const DECOR_TABLE = [
-  { clip: 'decor.tuft', weight: 6 },
-  { clip: 'decor.stone', weight: 3 },
-  { clip: 'decor.bone', weight: 2 },
-  { clip: 'decor.skull', weight: 1 },
-];

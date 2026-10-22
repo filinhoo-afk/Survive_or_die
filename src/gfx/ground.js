@@ -1,5 +1,5 @@
 import { drawFrame } from './atlas.js';
-import { DECOR_TABLE, GROUND_VARIANTS, TILE_PX } from '../art/terrain.js';
+import { GROUND_VARIANTS, TILE_PX } from '../art/terrain.js';
 
 /** Хэш пары целых → число [0, 1): стабильный «случай» для каждой плитки. */
 function hash2(x, y, salt) {
@@ -8,14 +8,14 @@ function hash2(x, y, salt) {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-function pickDecor(roll) {
-  const total = DECOR_TABLE.reduce((sum, item) => sum + item.weight, 0);
+function pickDecor(table, roll) {
+  const total = table.reduce((sum, item) => sum + item.weight, 0);
   let left = roll * total;
-  for (const item of DECOR_TABLE) {
+  for (const item of table) {
     left -= item.weight;
     if (left < 0) return item.clip;
   }
-  return DECOR_TABLE[0].clip;
+  return table[0].clip;
 }
 
 /**
@@ -23,11 +23,13 @@ function pickDecor(roll) {
  * В кадре игра только вырезает из неё окно камеры — тысячи плиток не рисуются заново.
  *
  * @param {{canvas: HTMLCanvasElement, clips: Record<string, object>}} atlas
- * @param {{width: number, height: number}} world
- * @param {{pixelScale: number, decorChance: number}} options
+ * @param {{id: string, world: {width: number, height: number}, ground: {decorChance: number, decor: object[]}}} location
+ * @param {number} pixelScale
  * @returns {HTMLCanvasElement}
  */
-export function bakeGround(atlas, world, { pixelScale, decorChance }) {
+export function bakeGround(atlas, location, pixelScale) {
+  const { world, ground } = location;
+  const { decorChance, decor } = ground;
   const canvas = document.createElement('canvas');
   canvas.width = world.width;
   canvas.height = world.height;
@@ -45,7 +47,7 @@ export function bakeGround(atlas, world, { pixelScale, decorChance }) {
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
       const variant = Math.floor(hash2(col, row, 1) * GROUND_VARIANTS);
-      place(`ground.${variant}`, col * tile, row * tile);
+      place(`ground.${location.id}.${variant}`, col * tile, row * tile);
     }
   }
 
@@ -55,7 +57,7 @@ export function bakeGround(atlas, world, { pixelScale, decorChance }) {
       if (hash2(col, row, 2) > decorChance) continue;
       const x = col * tile + tile * (0.25 + hash2(col, row, 3) * 0.5);
       const y = row * tile + tile * (0.4 + hash2(col, row, 4) * 0.5);
-      place(pickDecor(hash2(col, row, 5)), x, y);
+      place(pickDecor(decor, hash2(col, row, 5)), x, y);
     }
   }
 

@@ -2,15 +2,8 @@
 export const CONFIG = {
   width: 960,
   height: 540,
-  /** Игровой мир заметно больше экрана — по нему и ездит камера. */
-  world: {
-    width: 2880,
-    height: 1800,
-  },
   colors: {
     background: '#11151f',
-    outside: '#080a10',
-    border: '#31405e',
     player: '#7ee787',
     playerOutline: '#0b0e14',
     enemy: '#f2786a',
@@ -183,7 +176,5 @@ export const CONFIG = {
   ground: {
     /** Размер пикселя земли — как у спрайтов, чтобы пиксели были одного размера. */
     pixelScale: 3,
-    /** Доля плиток с декором. */
-    decorChance: 0.18,
   },
 };

@@ -30,6 +30,7 @@ import { DEFAULT_LOCATION } from './locations/index.js';
 import { bakeGround } from './gfx/ground.js';
 import { createLighting } from './gfx/lighting.js';
 import { drawShadow, sortByDepth } from './gfx/shadows.js';
+import { blockShots, buildObstacles, collideBodies, collideBody } from './systems/obstacles.js';
 import { drawText, textHeight, wrapText } from './gfx/font.js';
 
 const canvas = document.getElementById('game');
@@ -42,6 +43,7 @@ canvas.height = CONFIG.height;
 const location = DEFAULT_LOCATION;
 const world = location.world;
 const groundImage = bakeGround(atlas, location, CONFIG.ground.pixelScale);
+const obstacles = buildObstacles(location);
 const lighting = createLighting(canvas.width, canvas.height, CONFIG.lighting);
 const input = createInput();
 
@@ -271,15 +273,18 @@ function update(dt) {
 
   elapsed += dt;
   player.update(dt, input, world);
+  collideBody(player, obstacles);
 
   spawner.update(dt, enemies, camera);
 
   for (const enemy of enemies) enemy.update(dt, player, enemyShots);
   separate(enemies);
+  collideBodies(enemies, obstacles);
   const hpBefore = player.hp;
   applyContactDamage(player, enemies);
 
   for (const shot of enemyShots) shot.update(dt);
+  blockShots(enemyShots, obstacles);
   resolveEnemyShotHits(enemyShots, player);
   if (player.hp < hpBefore) {
     audio.play(player.alive ? 'hit' : 'death');
@@ -292,6 +297,7 @@ function update(dt) {
   arsenal.update(dt, { player, enemies, projectiles, killed });
   if (projectiles.length > shotsBefore) audio.play('shot');
   for (const shot of projectiles) shot.update(dt);
+  blockShots(projectiles, obstacles);
   killed.push(...resolveProjectileHits(projectiles, enemies));
 
   kills += killed.length;
@@ -348,7 +354,7 @@ function render() {
   arsenal.draw(ctx, scene, 'under');
   effects.draw(ctx);
   // Враги и игрок — в одном списке: кто ниже на экране, тот рисуется поверх.
-  for (const body of sortByDepth([player, ...enemies])) body.draw(ctx);
+  for (const body of sortByDepth([player, ...enemies, ...obstacles])) body.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
   for (const shot of enemyShots) shot.draw(ctx);
   arsenal.draw(ctx, scene, 'over');
@@ -384,6 +390,7 @@ function drawLighting() {
 function drawShadows() {
   const cfg = CONFIG.shadows;
   for (const gem of gems) drawShadow(ctx, gem.x, gem.y + 8, cfg.gemRadius, cfg);
+  for (const o of obstacles) drawShadow(ctx, o.x, o.footY, o.radius * 1.2, cfg);
   for (const enemy of enemies) drawShadow(ctx, enemy.x, enemy.footY, enemy.radius, cfg);
   if (player.visible) drawShadow(ctx, player.x, player.footY, player.radius, cfg);
 }
@@ -541,6 +548,9 @@ function drawMinimap() {
     canvas.width * scale,
     canvas.height * scale,
   );
+
+  ctx.fillStyle = '#4a5368';
+  for (const o of obstacles) ctx.fillRect(x + o.x * scale - 1, y + o.y * scale - 1, 2, 2);
 
   for (const enemy of enemies) {
     ctx.fillStyle = enemy.color;

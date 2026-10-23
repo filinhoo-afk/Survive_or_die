@@ -87,6 +87,40 @@ const DECOR_PALETTE = {
   k: '#2b2a26',
 };
 
+const BOULDER = [
+  '....oooooo....',
+  '..oollllmmoo..',
+  '.ollllmmmmmdo.',
+  'ollllmmmmmmddo',
+  'ollmmmmmmmdddo',
+  'olmmmmmmmdddoo',
+  'ommmmmmmddddo.',
+  'oommmmdddddoo.',
+  '.oodddddddoo..',
+  '..oooooooooo..',
+];
+
+const DEAD_TREE = [
+  '..t.....t..',
+  '..tt...tt..',
+  '...tt.tt...',
+  '.t..ttt..t.',
+  '.tt.ttt.tt.',
+  '..tttttt...',
+  '...tttt....',
+  '...tttT....',
+  '...ttTT....',
+  '...ttTT....',
+  '..tttTTT...',
+  '.ttttTTTt..',
+];
+
+const OBSTACLE_PALETTE = {
+  ...DECOR_PALETTE,
+  t: '#4a3a2a',
+  T: '#2e2318',
+};
+
 export const TERRAIN_CLIPS = {
   ...Object.fromEntries(
     LOCATION_LIST.flatMap((location) =>
@@ -100,4 +134,6 @@ export const TERRAIN_CLIPS = {
   'decor.stone': { palette: DECOR_PALETTE, frames: [STONE] },
   'decor.bone': { palette: DECOR_PALETTE, frames: [BONE] },
   'decor.skull': { palette: DECOR_PALETTE, frames: [SKULL] },
+  'obstacle.boulder': { palette: OBSTACLE_PALETTE, frames: [BOULDER] },
+  'obstacle.deadTree': { palette: OBSTACLE_PALETTE, frames: [DEAD_TREE] },
 };

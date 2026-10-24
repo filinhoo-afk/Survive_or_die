@@ -26,7 +26,7 @@ import { drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
 import { createTransition } from './ui/transition.js';
 import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
-import { DEFAULT_LOCATION } from './locations/index.js';
+import { DEFAULT_LOCATION, LOCATION_LIST } from './locations/index.js';
 import { bakeGround } from './gfx/ground.js';
 import { createLighting } from './gfx/lighting.js';
 import { drawShadow, sortByDepth } from './gfx/shadows.js';
@@ -40,10 +40,20 @@ canvas.width = CONFIG.width;
 canvas.height = CONFIG.height;
 
 /** Текущая локация: мир, земля и враги берутся из её данных. */
-const location = DEFAULT_LOCATION;
-const world = location.world;
-const groundImage = bakeGround(atlas, location, CONFIG.ground.pixelScale);
-const obstacles = buildObstacles(location);
+let location;
+let world;
+let groundImage;
+let obstacles;
+
+/** Переключает локацию: перепекает землю и расставляет препятствия заново. */
+function setLocation(next) {
+  location = next;
+  world = location.world;
+  groundImage = bakeGround(atlas, location, CONFIG.ground.pixelScale);
+  obstacles = buildObstacles(location);
+}
+
+setLocation(DEFAULT_LOCATION);
 const lighting = createLighting(canvas.width, canvas.height, CONFIG.lighting);
 const input = createInput();
 
@@ -125,6 +135,16 @@ const CHOICE_KEYS = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, N
 
 const transition = createTransition();
 
+const MENU_SHIFT = { ArrowLeft: -1, KeyA: -1, ArrowRight: 1, KeyD: 1 };
+
+/** Выбор локации в меню: листаем список по кругу и пересобираем мир на фоне. */
+function shiftLocation(step) {
+  const index = LOCATION_LIST.indexOf(location);
+  setLocation(LOCATION_LIST[(index + step + LOCATION_LIST.length) % LOCATION_LIST.length]);
+  newRun();
+  audio.play('pick');
+}
+
 function startRun() {
   newRun();
   mode = 'playing';
@@ -161,6 +181,7 @@ window.addEventListener('keydown', (event) => {
 
   if (mode === 'menu') {
     if (event.code === 'Enter' || event.code === 'Space') startRunFaded();
+    else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
     return;
   }
 
@@ -424,6 +445,17 @@ function drawHud() {
     shadow: colors.hudShadow,
   });
 
+  // До босса остаётся обратный отсчёт; без босса таймер просто идёт вверх.
+  if (location.duration !== null) {
+    const left = Math.max(0, location.duration - elapsed);
+    drawText(ctx, `БОСС ЧЕРЕЗ ${formatTime(left)}`, canvas.width / 2, 52, {
+      scale: 2,
+      align: 'center',
+      color: colors.hudDim,
+      shadow: colors.hudShadow,
+    });
+  }
+
   drawMinimap();
   if (summary) drawSummaryScreen(ctx, canvas, summary);
   if (offers) {
@@ -520,7 +552,7 @@ function drawStats() {
 }
 
 function drawMenu() {
-  drawMenuScreen(ctx, canvas, record);
+  drawMenuScreen(ctx, canvas, record, location, LOCATION_LIST.length > 1);
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

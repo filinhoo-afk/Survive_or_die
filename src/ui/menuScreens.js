@@ -31,7 +31,7 @@ function drawHints(ctx, canvas, top, lines) {
 }
 
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
-export function drawMenuScreen(ctx, canvas, record) {
+export function drawMenuScreen(ctx, canvas, record, location, canSwitch) {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
 
@@ -40,6 +40,10 @@ export function drawMenuScreen(ctx, canvas, record) {
 
   const top = 190 + (textHeight(8) + 8) * 2 + 18;
   const lines = [
+    {
+      text: canSwitch ? `Локация: ${location.title} · A / D — сменить` : location.title,
+      color: C.accent,
+    },
     { text: 'WASD / стрелки — движение', color: C.dim },
     { text: 'Оружие стреляет само', color: C.dim },
   ];

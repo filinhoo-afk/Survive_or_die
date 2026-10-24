@@ -59,6 +59,33 @@ const SHOOTER_BODY = [
   '...oddddo...',
 ];
 
+const WOLF_BODY = [
+  '.........oo...',
+  '..oo....oggo..',
+  '.ogggoooggggoo',
+  'oggggggggggeyo',
+  'ogggggggggggoo',
+  '.odgggggggddo.',
+  '..odddddddoo..',
+];
+
+const TREANT_BODY = [
+  '..b..b..bb..b..',
+  '.bbb.bbbbb.bbb.',
+  'bbbbbbbbbbbbbbb',
+  '.bbbbbbbbbbbbb.',
+  '..oooooooooo...',
+  '.oTTTTTTTTTTo..',
+  'oTTeeTTTTeeTTTo',
+  'oTTeeTTTTeeTTTo',
+  'oTTTTTTTTTTTTTo',
+  'oTTTTooooTTTTTo',
+  'oTTTTTTTTTTTTTo',
+  '.oTdTTTTTTdTTo.',
+  '.oddTTTTTTddo..',
+  '..ooddddddooo..',
+];
+
 /** Клип ходьбы и вспышки: ноги — последняя строка, их два положения. */
 function legged(body, legsA, legsB) {
   return [
@@ -151,6 +178,23 @@ export const ENEMY_CLIPS = {
     },
     frames: legged(TANK_BODY, '..oo..oooo..oo..', '..oo.oo..oo.oo..'),
     fps: 4,
+  }),
+  ...enemyClips('wolf', {
+    palette: { o: '#14161c', g: '#8a919e', d: '#575d6b', e: '#ffe27a', y: '#e0452f', w: '#ffffff' },
+    frames: legged(WOLF_BODY, '.oo..oo..oo.oo', 'oo..oo....oo.o'),
+    fps: 9,
+  }),
+  ...enemyClips('treant', {
+    palette: {
+      o: '#150f08',
+      b: '#3f7a3a',
+      T: '#6b4a2b',
+      d: '#46301b',
+      e: '#ffb347',
+      w: '#fff3dc',
+    },
+    frames: legged(TREANT_BODY, '..oo.oo..oo.oo.', '..oo..oo.oo..o.'),
+    fps: 3,
   }),
   ...enemyClips('shooter', {
     palette: shooterPalette,

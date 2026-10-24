@@ -121,6 +121,68 @@ const OBSTACLE_PALETTE = {
   T: '#2e2318',
 };
 
+const FERN = [
+  '..f...f..',
+  '.ff.f.ff.',
+  'fff.f.fff',
+  '.fffffff.',
+  '..fhfhf..',
+  '...fhf...',
+];
+
+const MUSHROOM = [
+  '.rrrr.',
+  'rwrrwr',
+  'rrrrrr',
+  '..ss..',
+  '..ss..',
+];
+
+const LEAVES = [
+  '.y..a..',
+  'yay.aya',
+  '.aya.y.',
+];
+
+const PINE = [
+  '.....p.....',
+  '....ppp....',
+  '...pppqp...',
+  '....pqpp...',
+  '..ppppqpp..',
+  '.pppqpppqp.',
+  '...pppqpp..',
+  '.ppqpppppp.',
+  'pppppqpppqp',
+  '.....bb....',
+  '.....bB....',
+  '.....bB....',
+];
+
+const STUMP = [
+  '..oooooo..',
+  '.oyyyyyyo.',
+  'oyyaayyayo',
+  'oyaaaaaayo',
+  '.obbbbbbo.',
+  '.obBbbBbo.',
+  '.oBBBBBBo.',
+];
+
+const FOREST_PALETTE = {
+  ...DECOR_PALETTE,
+  f: '#2f8a3c',
+  h: '#1d5a28',
+  r: '#d8453b',
+  s: '#e8dcc0',
+  y: '#c98f2e',
+  a: '#8c5a1e',
+  p: '#1f5c2e',
+  q: '#2f8040',
+  b: '#5a3b1f',
+  B: '#3a2412',
+};
+
 export const TERRAIN_CLIPS = {
   ...Object.fromEntries(
     LOCATION_LIST.flatMap((location) =>
@@ -136,4 +198,9 @@ export const TERRAIN_CLIPS = {
   'decor.skull': { palette: DECOR_PALETTE, frames: [SKULL] },
   'obstacle.boulder': { palette: OBSTACLE_PALETTE, frames: [BOULDER] },
   'obstacle.deadTree': { palette: OBSTACLE_PALETTE, frames: [DEAD_TREE] },
+  'decor.fern': { palette: FOREST_PALETTE, frames: [FERN] },
+  'decor.mushroom': { palette: FOREST_PALETTE, frames: [MUSHROOM] },
+  'decor.leaves': { palette: FOREST_PALETTE, frames: [LEAVES] },
+  'obstacle.pine': { palette: FOREST_PALETTE, frames: [PINE] },
+  'obstacle.stump': { palette: FOREST_PALETTE, frames: [STUMP] },
 };

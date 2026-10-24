@@ -78,6 +78,46 @@ export const ENEMY_TYPES = {
     showHealthBar: true,
   },
 
+  /** Волк: быстрее игрока, кусает больно, но умирает с пары попаданий. */
+  wolf: {
+    id: 'wolf',
+    title: 'Волк',
+    from: 0,
+    radius: 12,
+    speed: 150,
+    hp: 30,
+    damage: 10,
+    xp: 2,
+    color: '#8a919e',
+    spriteScale: 3,
+    weight: 5,
+    pack: 3,
+    mass: 0.8,
+    knockbackResist: 0,
+    wobble: 0.25,
+    showHealthBar: false,
+  },
+
+  /** Энт: лесной великан, медленный и очень живучий. */
+  treant: {
+    id: 'treant',
+    title: 'Энт',
+    from: 75,
+    radius: 22,
+    speed: 48,
+    hp: 220,
+    damage: 28,
+    xp: 6,
+    color: '#3f7a3a',
+    spriteScale: 3,
+    weight: 1,
+    pack: 1,
+    mass: 4,
+    knockbackResist: 0.9,
+    wobble: 0,
+    showHealthBar: true,
+  },
+
   /**
    * Стрелок: не лезет в ближний бой, а держится на расстоянии и
    * обстреливает. Хрупкий — награда за то, что до него надо добраться.

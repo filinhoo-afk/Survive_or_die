@@ -12,7 +12,9 @@
  *   spriteScale     — во сколько раз увеличить пиксельный спрайт (art/enemies.js);
  *   ranged          — если задано, враг стреляет: держится на дистанции
  *                     keepDistance, раз в cooldown секунд пускает снаряд
- *                     (damage, speed), перед выстрелом windup секунд целится.
+ *                     (damage, speed), перед выстрелом windup секунд целится;
+ *   boss            — босс: в обычный спавн не попадает, появляется по
+ *                     таймеру локации (см. entities/boss.js).
  */
 export const ENEMY_TYPES = {
   grunt: {
@@ -146,6 +148,27 @@ export const ENEMY_TYPES = {
       damage: 10,
       speed: 240,
     },
+  },
+
+  /** Босс леса: огромный, медленный, бьёт залпами снарядов. */
+  guardian: {
+    id: 'guardian',
+    title: 'Лесной страж',
+    from: Infinity,
+    radius: 48,
+    speed: 55,
+    hp: 2600,
+    damage: 35,
+    xp: 60,
+    color: '#2f8a4a',
+    spriteScale: 6,
+    weight: 0,
+    pack: 1,
+    mass: 30,
+    knockbackResist: 0.98,
+    wobble: 0,
+    showHealthBar: false,
+    boss: true,
   },
 };
 

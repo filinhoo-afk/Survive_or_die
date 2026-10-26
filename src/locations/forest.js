@@ -9,6 +9,8 @@ export const FOREST = {
     outside: '#060b08',
     border: '#2f5a3a',
   },
+  /** Босс, который выходит, когда истекает duration. */
+  boss: 'guardian',
   enemies: ['wolf', 'grunt', 'treant', 'shooter'],
   obstacles: {
     count: 90,

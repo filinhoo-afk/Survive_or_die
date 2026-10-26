@@ -12,6 +12,8 @@ import {
   resolveProjectileHits,
 } from './systems/damage.js';
 import { Effects } from './systems/effects.js';
+import { Boss } from './entities/boss.js';
+import { ENEMY_TYPES } from './enemies/types.js';
 import { Gem } from './entities/gem.js';
 import { updateGems } from './systems/pickups.js';
 import { UpgradeState } from './systems/upgrades.js';
@@ -67,6 +69,8 @@ let spawner;
 let arsenal;
 let effects;
 let upgrades;
+/** Босс текущего забега: null, пока не вышел. */
+let boss;
 
 /** Режим игры: меню, забег или пауза (поражение — это !player.alive). */
 let mode = 'menu';
@@ -76,6 +80,7 @@ function newRun() {
   player = new Player(world.width / 2, world.height / 2);
   camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
   enemies = [];
+  boss = null;
   projectiles = [];
   enemyShots = [];
   gems = [];
@@ -104,6 +109,15 @@ function newRun() {
   // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
   spawner.spawnWave(enemies, camera);
   camera.snapTo(player);
+}
+
+/** Босс выходит из-за края кадра, как и обычные враги. */
+function spawnBoss() {
+  const point = spawner.pickSpawnPoint(camera);
+  boss = new Boss(point.x, point.y, ENEMY_TYPES[location.boss]);
+  enemies.push(boss);
+  audio.play('levelUp');
+  camera.addShake(CONFIG.shake.playerHit);
 }
 
 /** Сколько повышений ещё не разыграно — за раз их может прийти несколько. */
@@ -296,7 +310,9 @@ function update(dt) {
   player.update(dt, input, world);
   collideBody(player, obstacles);
 
-  spawner.update(dt, enemies, camera);
+  // Когда время локации вышло, выходит босс, а обычные волны прекращаются.
+  if (location.boss && !boss && elapsed >= location.duration) spawnBoss();
+  if (!boss) spawner.update(dt, enemies, camera);
 
   for (const enemy of enemies) enemy.update(dt, player, enemyShots);
   separate(enemies);
@@ -446,7 +462,16 @@ function drawHud() {
   });
 
   // До босса остаётся обратный отсчёт; без босса таймер просто идёт вверх.
-  if (location.duration !== null) {
+  if (boss?.alive) {
+    drawBossBar();
+  } else if (boss) {
+    drawText(ctx, `${boss.type.title.toUpperCase()} ПОВЕРЖЕН`, canvas.width / 2, 52, {
+      scale: 2,
+      align: 'center',
+      color: colors.hudText,
+      shadow: colors.hudShadow,
+    });
+  } else if (location.duration !== null) {
     const left = Math.max(0, location.duration - elapsed);
     drawText(ctx, `БОСС ЧЕРЕЗ ${formatTime(left)}`, canvas.width / 2, 52, {
       scale: 2,
@@ -487,6 +512,21 @@ function drawBar(x, y, width, height, ratio, fill) {
   ctx.strokeStyle = colors.hudBevel;
   ctx.lineWidth = 1;
   ctx.strokeRect(x - 1.5, y - 1.5, width + 3, height + 3);
+}
+
+/** Здоровье босса: широкая полоса снизу, на второй фазе краснеет. */
+function drawBossBar() {
+  const width = 520;
+  const height = 18;
+  const x = (canvas.width - width) / 2;
+  const y = canvas.height - 48;
+  drawBar(x, y, width, height, boss.hp / boss.maxHp, boss.phaseNumber === 1 ? '#5fbf6a' : '#e0452f');
+  drawText(ctx, boss.type.title.toUpperCase(), canvas.width / 2, y - 22, {
+    scale: 2,
+    align: 'center',
+    color: CONFIG.colors.hudText,
+    shadow: CONFIG.colors.hudShadow,
+  });
 }
 
 /** Полоса опыта во всю ширину по верхнему краю экрана. */

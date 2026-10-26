@@ -86,6 +86,18 @@ const TREANT_BODY = [
   '..ooddddddooo..',
 ];
 
+/** Лесной страж: энт с оленьими рогами и тлеющими глазами. */
+const GUARDIAN_BODY = [
+  'a.a....a....a.a',
+  'aa.a..aaa..a.aa',
+  '.aaaaaaaaaaaaa.',
+  '..bbbbbbbbbbb..',
+  ...TREANT_BODY.slice(1),
+];
+
+/** Тот же страж с горящими глазами: прицел перед залпом. */
+const GUARDIAN_AIM = GUARDIAN_BODY.map((row) => row.replace(/e/g, 'g'));
+
 /** Клип ходьбы и вспышки: ноги — последняя строка, их два положения. */
 function legged(body, legsA, legsB) {
   return [
@@ -156,6 +168,17 @@ const shooterAim = shooterFrames.map((rows) =>
   rows.map((row, y) => (y === 5 ? row.replace('dd', 'gg') : row)),
 );
 
+const guardianPalette = {
+  o: '#0c1408',
+  b: '#2f8a4a',
+  T: '#5a4a2e',
+  d: '#3a2d1a',
+  a: '#c9b98a',
+  e: '#ff5a3c',
+  g: '#fff07a',
+  w: '#f2ffe8',
+};
+
 export const ENEMY_CLIPS = {
   ...enemyClips('grunt', {
     palette: { o: '#2a100d', r: '#f2786a', d: '#c24f43', y: '#ffe27a', w: '#ffffff' },
@@ -195,6 +218,19 @@ export const ENEMY_CLIPS = {
     },
     frames: legged(TREANT_BODY, '..oo.oo..oo.oo.', '..oo..oo.oo..o.'),
     fps: 3,
+  }),
+  ...enemyClips('guardian', {
+    palette: { ...guardianPalette },
+    frames: legged(GUARDIAN_BODY, '..oo.oo..oo.oo.', '..oo..oo.oo..o.'),
+    fps: 2,
+    extra: {
+      'guardian.aim': {
+        palette: guardianPalette,
+        frames: legged(GUARDIAN_AIM, '..oo.oo..oo.oo.', '..oo..oo.oo..o.'),
+        fps: 8,
+        anchor: { x: 0.5, y: 0.5 },
+      },
+    },
   }),
   ...enemyClips('shooter', {
     palette: shooterPalette,

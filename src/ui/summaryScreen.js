@@ -29,9 +29,20 @@ export function drawSummaryScreen(ctx, canvas, summary) {
   ctx.fillStyle = 'rgba(8, 10, 16, 0.78)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  drawText(ctx, 'ВЫ ПОГИБЛИ', cx, 28, { scale: 5, align: 'center', color: C.danger });
+  const { victory } = summary;
+  if (victory) {
+    drawText(ctx, 'ЛОКАЦИЯ ПРОЙДЕНА', cx, 28, { scale: 5, align: 'center', color: C.record });
+  } else {
+    drawText(ctx, 'ВЫ ПОГИБЛИ', cx, 28, { scale: 5, align: 'center', color: C.danger });
+  }
 
-  if (result.beaten.size > 0) {
+  if (victory && result.beaten.size === 0) {
+    drawText(ctx, `${summary.location.title}: босс повержен`, cx, 80, {
+      scale: SCALE,
+      align: 'center',
+      color: C.dim,
+    });
+  } else if (result.beaten.size > 0) {
     // Мигание — новый рекорд должен бросаться в глаза.
     const color = Math.floor(performance.now() / 260) % 2 === 0 ? C.record : '#fff1b0';
     drawText(ctx, '+ НОВЫЙ РЕКОРД +', cx, 76, { scale: 3, align: 'center', color });
@@ -78,7 +89,13 @@ export function drawSummaryScreen(ctx, canvas, summary) {
     y += buildHeight;
   }
 
-  drawText(ctx, 'R / Enter / клик — заново · Esc — в меню', cx, canvas.height - 34, {
+  let hint = 'R / Enter / клик — заново · Esc — в меню';
+  if (victory) {
+    hint = summary.next
+      ? `Enter / клик — дальше: ${summary.next.title} · R — заново · Esc — в меню`
+      : 'Enter / клик — в меню · R — заново';
+  }
+  drawText(ctx, hint, cx, canvas.height - 34, {
     scale: SCALE,
     align: 'center',
     color: Math.floor(performance.now() / 520) % 2 === 0 ? C.accent : C.dim,

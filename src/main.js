@@ -105,6 +105,7 @@ function newRun() {
   damageDealt = 0;
   crits = 0;
   summary = null;
+  victoryDelay = 0;
 
   // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
   spawner.spawnWave(enemies, camera);
@@ -170,6 +171,24 @@ function startRunFaded() {
   transition.go(startRun);
 }
 
+/** Следующая локация кампании или undefined, если дальше пока нет. */
+function nextLocation() {
+  return LOCATION_LIST[LOCATION_LIST.indexOf(location) + 1];
+}
+
+/** После победы: идём в следующую локацию, а если её нет — в меню. */
+function continueFaded() {
+  const next = nextLocation();
+  if (!next) {
+    menuFaded();
+    return;
+  }
+  transition.go(() => {
+    setLocation(next);
+    startRun();
+  });
+}
+
 function menuFaded() {
   transition.go(() => setMode('menu'));
 }
@@ -199,8 +218,12 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
-  if (!player.alive) {
-    if (event.code === 'KeyR' || event.code === 'Enter') startRunFaded();
+  if (summary) {
+    if (summary.victory) {
+      if (event.code === 'Enter') continueFaded();
+      else if (event.code === 'KeyR') startRunFaded();
+      else if (event.code === 'Escape') menuFaded();
+    } else if (event.code === 'KeyR' || event.code === 'Enter') startRunFaded();
     else if (event.code === 'Escape') menuFaded();
     return;
   }
@@ -221,7 +244,7 @@ window.addEventListener('keydown', (event) => {
 
 // Пауза сама включается, когда вкладка теряет фокус.
 window.addEventListener('blur', () => {
-  if (mode === 'playing' && player.alive && !offers) setMode('paused');
+  if (mode === 'playing' && !summary && !offers) setMode('paused');
 });
 
 /** Канвас растягивается стилями, поэтому переводим координаты мыши в его пиксели. */
@@ -252,8 +275,9 @@ canvas.addEventListener('click', (event) => {
     setMode('playing');
     return;
   }
-  if (!player.alive) {
-    startRunFaded();
+  if (summary) {
+    if (summary.victory) continueFaded();
+    else startRunFaded();
     return;
   }
   if (!offers) return;
@@ -269,11 +293,14 @@ let damageDealt = 0;
 let crits = 0;
 /** Итоги забега: собираются один раз в момент смерти, до этого null. */
 let summary = null;
+/** Секунд до экрана победы после падения босса; 0 — босс ещё жив. */
+let victoryDelay = 0;
+const VICTORY_DELAY = 2.5;
 /** Лучшие показатели — для главного меню. */
 let record = loadRecord();
 
-/** Фиксирует итоги забега и обновляет рекорд. */
-function finishRun() {
+/** Фиксирует итоги забега и обновляет рекорд; victory — босс повержен. */
+function finishRun(victory = false) {
   const stats = {
     time: elapsed,
     kills,
@@ -286,8 +313,9 @@ function finishRun() {
   };
   const result = submitRun(stats);
   record = result.record;
-  summary = { stats, result };
-  if (result.beaten.size > 0) audio.play('record');
+  summary = { stats, result, victory, location, next: victory ? nextLocation() : undefined };
+  if (victory) audio.play('levelUp');
+  else if (result.beaten.size > 0) audio.play('record');
 }
 
 // Мир нужен уже в меню — он рисуется на фоне.
@@ -304,7 +332,7 @@ function update(dt) {
   if (mode === 'playing' && !offers) camera.updateShake(dt, CONFIG.shake);
 
   // В меню, на паузе, после смерти и на экране выбора мир замирает целиком.
-  if (mode !== 'playing' || !player.alive || offers) return;
+  if (mode !== 'playing' || summary || offers) return;
 
   elapsed += dt;
   player.update(dt, input, world);
@@ -366,12 +394,23 @@ function update(dt) {
 
   camera.follow(player, dt);
 
-  if (!player.alive && !summary) finishRun();
+  if (!player.alive) {
+    finishRun();
+  } else if (boss && !boss.alive) {
+    // Босс пал: оставшиеся снаряды гаснут, пару секунд герой празднует.
+    if (victoryDelay === 0) {
+      enemyShots.length = 0;
+      audio.play('record');
+      camera.addShake(CONFIG.shake.playerDeath);
+    }
+    victoryDelay += dt;
+    if (victoryDelay >= VICTORY_DELAY) finishRun(true);
+  }
 }
 
 /** Музыка тише, когда мир стоит: меню, пауза, выбор апгрейда, смерть. */
 function syncMusic() {
-  const active = mode === 'playing' && player.alive && !offers;
+  const active = mode === 'playing' && !summary && !offers;
   audio.setMusicLevel(active ? 1 : 0.35);
 }
 

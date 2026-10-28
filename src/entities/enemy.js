@@ -160,10 +160,12 @@ export class Enemy {
   draw(ctx) {
     // Клипы одного типа поделены на кадры одинаково, шаг не сбрасывается.
     this.animator.swap(this.clipName);
+    if (this.type.ghost) ctx.globalAlpha = 0.72;
     this.animator.draw(ctx, this.x, this.y, {
       scale: this.type.spriteScale,
       flipX: this.facingLeft,
     });
+    ctx.globalAlpha = 1;
 
     if (this.type.showHealthBar && this.hp < this.maxHp) this.drawHealthBar(ctx);
   }

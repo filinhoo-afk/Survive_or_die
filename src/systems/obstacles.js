@@ -31,7 +31,20 @@ export function buildObstacles(location) {
   const edge = 80;
   const result = [];
 
-  for (let attempt = 0; attempt < cfg.count * 20 && result.length < cfg.count; attempt += 1) {
+  // Стены: цепочки блоков вдоль отрезков; расставляются первыми, остальное обходит их.
+  for (const wall of cfg.walls ?? []) {
+    const length = Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1);
+    const steps = Math.max(1, Math.round(length / cfg.wall.step));
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      result.push(
+        new Obstacle(wall.x1 + (wall.x2 - wall.x1) * t, wall.y1 + (wall.y2 - wall.y1) * t, cfg.wall),
+      );
+    }
+  }
+
+  const walled = result.length;
+  for (let attempt = 0; attempt < cfg.count * 20 && result.length - walled < cfg.count; attempt += 1) {
     const kind = pickKind(cfg.kinds, random());
     const x = edge + random() * (world.width - edge * 2);
     const y = edge + random() * (world.height - edge * 2);
@@ -63,8 +76,11 @@ export function collideBody(body, obstacles) {
   }
 }
 
+/** Призраки (type.ghost) проходят сквозь препятствия. */
 export function collideBodies(bodies, obstacles) {
-  for (const body of bodies) collideBody(body, obstacles);
+  for (const body of bodies) {
+    if (!body.type?.ghost) collideBody(body, obstacles);
+  }
 }
 
 /** Снаряды гаснут о препятствия: из-за камня не постреляешь. */

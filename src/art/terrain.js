@@ -183,6 +183,54 @@ const FOREST_PALETTE = {
   B: '#3a2412',
 };
 
+const RUBBLE = [
+  '..o..oo.',
+  '.osoosso',
+  'ossSsSso',
+  '.oSSoSo.',
+];
+
+const RUNE = [
+  '..p..',
+  '.ppp.',
+  'pp.pp',
+  '.ppp.',
+  '..p..',
+];
+
+const RUIN_WALL = [
+  '.ooooooo.',
+  'ossssmsso',
+  'ossssssso',
+  'oSSSSSSSo',
+  'oossoosoo',
+  'osssssmso',
+  'ossosssso',
+  'oSSSSSSSo',
+  '.ooooooo.',
+];
+
+const PILLAR = [
+  '.ooooo.',
+  'osssmso',
+  'osssSso',
+  '.ossSo.',
+  '.ossSo.',
+  '.osmSo.',
+  '.ossSo.',
+  'ooosSoo',
+  'oSSSSSo',
+  'ooooooo',
+];
+
+const RUINS_PALETTE = {
+  ...DECOR_PALETTE,
+  s: '#6a6684',
+  S: '#43405a',
+  m: '#4f6a4a',
+  p: '#8a5fd0',
+};
+
 export const TERRAIN_CLIPS = {
   ...Object.fromEntries(
     LOCATION_LIST.flatMap((location) =>
@@ -203,4 +251,8 @@ export const TERRAIN_CLIPS = {
   'decor.leaves': { palette: FOREST_PALETTE, frames: [LEAVES] },
   'obstacle.pine': { palette: FOREST_PALETTE, frames: [PINE] },
   'obstacle.stump': { palette: FOREST_PALETTE, frames: [STUMP] },
+  'decor.rubble': { palette: RUINS_PALETTE, frames: [RUBBLE] },
+  'decor.rune': { palette: RUINS_PALETTE, frames: [RUNE] },
+  'obstacle.ruinwall': { palette: RUINS_PALETTE, frames: [RUIN_WALL] },
+  'obstacle.pillar': { palette: RUINS_PALETTE, frames: [PILLAR] },
 };

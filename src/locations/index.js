@@ -1,5 +1,6 @@
 import { WASTELAND } from './wasteland.js';
 import { FOREST } from './forest.js';
+import { RUINS } from './ruins.js';
 
 /**
  * Все локации игры. Локация — только данные: мир, палитра земли, декор,
@@ -8,6 +9,7 @@ import { FOREST } from './forest.js';
 export const LOCATIONS = {
   [WASTELAND.id]: WASTELAND,
   [FOREST.id]: FOREST,
+  [RUINS.id]: RUINS,
 };
 
 export const LOCATION_LIST = Object.values(LOCATIONS);

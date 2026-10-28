@@ -98,6 +98,19 @@ const GUARDIAN_BODY = [
 /** Тот же страж с горящими глазами: прицел перед залпом. */
 const GUARDIAN_AIM = GUARDIAN_BODY.map((row) => row.replace(/e/g, 'g'));
 
+/** Призрак: балахон без ног, низ колышется (последняя строка — два положения). */
+const GHOST_BODY = [
+  '....oooo....',
+  '..ollllllo..',
+  '.ollllllllo.',
+  'olleelleello',
+  'olleelleello',
+  'ollllllllllo',
+  'ollllllllllo',
+  'odllllllllld',
+  'oddllllllddo',
+];
+
 /** Клип ходьбы и вспышки: ноги — последняя строка, их два положения. */
 function legged(body, legsA, legsB) {
   return [
@@ -231,6 +244,16 @@ export const ENEMY_CLIPS = {
         anchor: { x: 0.5, y: 0.5 },
       },
     },
+  }),
+  ...enemyClips('ghost', {
+    palette: { o: '#2a3a5a', l: '#a9c0ee', d: '#6f88c0', e: '#101826', w: '#ffffff' },
+    frames: legged(GHOST_BODY, 'o.oo.oo.oo.o', '.oo.oo.oo.o.'),
+    fps: 4,
+  }),
+  ...enemyClips('wraith', {
+    palette: { o: '#2c1450', l: '#c49af0', d: '#8658c4', e: '#ffd24a', w: '#ffffff' },
+    frames: legged(GHOST_BODY, 'o.oo.oo.oo.o', '.oo.oo.oo.o.'),
+    fps: 3,
   }),
   ...enemyClips('shooter', {
     palette: shooterPalette,

@@ -13,6 +13,7 @@
  *   ranged          — если задано, враг стреляет: держится на дистанции
  *                     keepDistance, раз в cooldown секунд пускает снаряд
  *                     (damage, speed), перед выстрелом windup секунд целится;
+ *   ghost           — призрак: проходит сквозь препятствия и рисуется полупрозрачным;
  *   boss            — босс: в обычный спавн не попадает, появляется по
  *                     таймеру локации (см. entities/boss.js).
  */
@@ -148,6 +149,48 @@ export const ENEMY_TYPES = {
       damage: 10,
       speed: 240,
     },
+  },
+
+  /** Призрак: проходит сквозь стены и камни, поэтому в проходах не застревает. */
+  ghost: {
+    id: 'ghost',
+    title: 'Призрак',
+    from: 0,
+    radius: 12,
+    speed: 100,
+    hp: 26,
+    damage: 9,
+    xp: 2,
+    color: '#a9c0ee',
+    spriteScale: 3,
+    weight: 5,
+    pack: 2,
+    mass: 0.6,
+    knockbackResist: 0,
+    wobble: 0.35,
+    showHealthBar: false,
+    ghost: true,
+  },
+
+  /** Привидение: старший призрак — крупнее, живучее, тоже сквозь стены. */
+  wraith: {
+    id: 'wraith',
+    title: 'Привидение',
+    from: 70,
+    radius: 18,
+    speed: 80,
+    hp: 110,
+    damage: 18,
+    xp: 5,
+    color: '#c49af0',
+    spriteScale: 4,
+    weight: 1.5,
+    pack: 1,
+    mass: 2,
+    knockbackResist: 0.5,
+    wobble: 0.2,
+    showHealthBar: true,
+    ghost: true,
   },
 
   /** Босс леса: огромный, медленный, бьёт залпами снарядов. */

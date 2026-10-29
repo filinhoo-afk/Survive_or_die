@@ -13,6 +13,7 @@ import {
 } from './systems/damage.js';
 import { Effects } from './systems/effects.js';
 import { Boss } from './entities/boss.js';
+import { Necromancer } from './entities/necromancer.js';
 import { ENEMY_TYPES } from './enemies/types.js';
 import { Gem } from './entities/gem.js';
 import { updateGems } from './systems/pickups.js';
@@ -115,7 +116,10 @@ function newRun() {
 /** Босс выходит из-за края кадра, как и обычные враги. */
 function spawnBoss() {
   const point = spawner.pickSpawnPoint(camera);
-  boss = new Boss(point.x, point.y, ENEMY_TYPES[location.boss]);
+  const type = ENEMY_TYPES[location.boss];
+  boss = type.id === 'necromancer'
+    ? new Necromancer(point.x, point.y, type, world)
+    : new Boss(point.x, point.y, type);
   enemies.push(boss);
   audio.play('levelUp');
   camera.addShake(CONFIG.shake.playerHit);
@@ -342,7 +346,8 @@ function update(dt) {
   if (location.boss && !boss && elapsed >= location.duration) spawnBoss();
   if (!boss) spawner.update(dt, enemies, camera);
 
-  for (const enemy of enemies) enemy.update(dt, player, enemyShots);
+  // Призванных боссом врагов он кладёт в тот же список: идём по копии.
+  for (const enemy of [...enemies]) enemy.update(dt, player, enemyShots, enemies);
   separate(enemies);
   collideBodies(enemies, obstacles);
   const hpBefore = player.hp;
@@ -400,6 +405,7 @@ function update(dt) {
     // Босс пал: оставшиеся снаряды гаснут, пару секунд герой празднует.
     if (victoryDelay === 0) {
       enemyShots.length = 0;
+      boss.dismissMinions?.(enemies);
       audio.play('record');
       camera.addShake(CONFIG.shake.playerDeath);
     }
@@ -559,7 +565,7 @@ function drawBossBar() {
   const height = 18;
   const x = (canvas.width - width) / 2;
   const y = canvas.height - 48;
-  drawBar(x, y, width, height, boss.hp / boss.maxHp, boss.phaseNumber === 1 ? '#5fbf6a' : '#e0452f');
+  drawBar(x, y, width, height, boss.hp / boss.maxHp, boss.phaseNumber === 1 ? boss.type.barColor ?? '#5fbf6a' : '#e0452f');
   drawText(ctx, boss.type.title.toUpperCase(), canvas.width / 2, y - 22, {
     scale: 2,
     align: 'center',

@@ -98,6 +98,25 @@ const GUARDIAN_BODY = [
 /** Тот же страж с горящими глазами: прицел перед залпом. */
 const GUARDIAN_AIM = GUARDIAN_BODY.map((row) => row.replace(/e/g, 'g'));
 
+/** Некромант: капюшон, череп вместо лица, посох с зелёным огнём слева. */
+const NECROMANCER_BODY = [
+  'l...ooooooo....',
+  'T..oppppppppo..',
+  'T.oppppppppppo.',
+  'T.opsssssssspo.',
+  'T.opseesssseepo',
+  'T.opssssssssspo',
+  'T.opsswswswsspo',
+  'T..oppppppppo..',
+  'T.oppdppppdppo.',
+  'T.opppdppdpppo.',
+  'T.oppppppppppo.',
+  '..oddppppppddo.',
+];
+
+/** Тот же некромант с жёлтыми глазами и огнём: прицел перед призывом. */
+const NECROMANCER_AIM = NECROMANCER_BODY.map((row) => row.replace(/[el]/g, 'g'));
+
 /** Призрак: балахон без ног, низ колышется (последняя строка — два положения). */
 const GHOST_BODY = [
   '....oooo....',
@@ -192,6 +211,18 @@ const guardianPalette = {
   w: '#f2ffe8',
 };
 
+const necromancerPalette = {
+  o: '#12081c',
+  p: '#5a2f8a',
+  d: '#3a1d5c',
+  s: '#d8d2c0',
+  e: '#6bff9a',
+  l: '#6bff9a',
+  T: '#5a4a2e',
+  g: '#fff07a',
+  w: '#ffffff',
+};
+
 export const ENEMY_CLIPS = {
   ...enemyClips('grunt', {
     palette: { o: '#2a100d', r: '#f2786a', d: '#c24f43', y: '#ffe27a', w: '#ffffff' },
@@ -240,6 +271,19 @@ export const ENEMY_CLIPS = {
       'guardian.aim': {
         palette: guardianPalette,
         frames: legged(GUARDIAN_AIM, '..oo.oo..oo.oo.', '..oo..oo.oo..o.'),
+        fps: 8,
+        anchor: { x: 0.5, y: 0.5 },
+      },
+    },
+  }),
+  ...enemyClips('necromancer', {
+    palette: { ...necromancerPalette },
+    frames: legged(NECROMANCER_BODY, '..oo.oo.oo.oo..', '...oo.oo.oo.o..'),
+    fps: 2,
+    extra: {
+      'necromancer.aim': {
+        palette: necromancerPalette,
+        frames: legged(NECROMANCER_AIM, '..oo.oo.oo.oo..', '...oo.oo.oo.o..'),
         fps: 8,
         anchor: { x: 0.5, y: 0.5 },
       },

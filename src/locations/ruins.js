@@ -6,13 +6,15 @@
 export const RUINS = {
   id: 'ruins',
   title: 'Руины',
-  /** Босс «Некромант» появится на следующий день плана; пока забег бесконечный. */
-  duration: null,
+  /** Секунд до босса: восемь минут. */
+  duration: 480,
   world: { width: 3200, height: 2000 },
   colors: {
     outside: '#07060b',
     border: '#4a4468',
   },
+  /** Босс, который выходит, когда истекает duration. */
+  boss: 'necromancer',
   enemies: ['ghost', 'grunt', 'shooter', 'wraith', 'tank'],
   obstacles: {
     count: 28,

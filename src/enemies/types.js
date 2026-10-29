@@ -213,6 +213,28 @@ export const ENEMY_TYPES = {
     showHealthBar: false,
     boss: true,
   },
+
+  /** Босс руин: держится на расстоянии, призывает призраков и телепортируется. */
+  necromancer: {
+    id: 'necromancer',
+    title: 'Некромант',
+    from: Infinity,
+    radius: 34,
+    speed: 70,
+    hp: 3000,
+    damage: 30,
+    xp: 80,
+    color: '#8658c4',
+    barColor: '#9a5fe0',
+    spriteScale: 5,
+    weight: 0,
+    pack: 1,
+    mass: 30,
+    knockbackResist: 0.98,
+    wobble: 0,
+    showHealthBar: false,
+    boss: true,
+  },
 };
 
 export const ENEMY_TYPE_LIST = Object.values(ENEMY_TYPES);

@@ -231,6 +231,61 @@ const RUINS_PALETTE = {
   p: '#8a5fd0',
 };
 
+const DRIFT = [
+  '..wwww..',
+  '.wwwwsw.',
+  'wwwswwww',
+];
+
+const CRYSTAL = [
+  '...i...',
+  '..iwi..',
+  '.iiwIi.',
+  '.iiwIi.',
+  'iiiwIII',
+  '.IIIII.',
+];
+
+const ICE_ROCK = [
+  '....oooooo....',
+  '..ooiiwwiioo..',
+  '.oiiiwwiiiiIo.',
+  'oiiiwwiiiiiIIo',
+  'oiiwiiiiiiIIIo',
+  'oiiiiiiiiIIIoo',
+  'oiiiiiiiIIIIo.',
+  'ooiiiiIIIIIoo.',
+  '.ooIIIIIIIoo..',
+  '..oooooooooo..',
+];
+
+const SNOW_PINE = [
+  '.....w.....',
+  '....pww....',
+  '...pwwqp...',
+  '....pqwp...',
+  '..ppwwqpp..',
+  '.pwwqpppwp.',
+  '...pwwqpp..',
+  '.ppwqpwppp.',
+  'pwwpppqwwpp',
+  '.....bb....',
+  '.....bB....',
+  '.....bB....',
+];
+
+const GLACIER_PALETTE = {
+  ...DECOR_PALETTE,
+  w: '#e4eef8',
+  s: '#9fb8d0',
+  i: '#8fd6f2',
+  I: '#4a9fcf',
+  p: '#1d4a3a',
+  q: '#2b6a52',
+  b: '#5a3b1f',
+  B: '#3a2412',
+};
+
 export const TERRAIN_CLIPS = {
   ...Object.fromEntries(
     LOCATION_LIST.flatMap((location) =>
@@ -255,4 +310,8 @@ export const TERRAIN_CLIPS = {
   'decor.rune': { palette: RUINS_PALETTE, frames: [RUNE] },
   'obstacle.ruinwall': { palette: RUINS_PALETTE, frames: [RUIN_WALL] },
   'obstacle.pillar': { palette: RUINS_PALETTE, frames: [PILLAR] },
+  'decor.drift': { palette: GLACIER_PALETTE, frames: [DRIFT] },
+  'decor.crystal': { palette: GLACIER_PALETTE, frames: [CRYSTAL] },
+  'obstacle.icerock': { palette: GLACIER_PALETTE, frames: [ICE_ROCK] },
+  'obstacle.snowpine': { palette: GLACIER_PALETTE, frames: [SNOW_PINE] },
 };

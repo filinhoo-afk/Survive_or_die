@@ -32,6 +32,7 @@ import { Animator } from './gfx/animator.js';
 import { DEFAULT_LOCATION, LOCATION_LIST } from './locations/index.js';
 import { bakeGround } from './gfx/ground.js';
 import { createLighting } from './gfx/lighting.js';
+import { createBlizzard } from './gfx/blizzard.js';
 import { drawShadow, sortByDepth } from './gfx/shadows.js';
 import { blockShots, buildObstacles, collideBodies, collideBody } from './systems/obstacles.js';
 import { drawText, textHeight, wrapText } from './gfx/font.js';
@@ -47,6 +48,8 @@ let location;
 let world;
 let groundImage;
 let obstacles;
+/** Метель локации или null, если погода ясная. */
+let blizzard;
 
 /** Переключает локацию: перепекает землю и расставляет препятствия заново. */
 function setLocation(next) {
@@ -54,6 +57,7 @@ function setLocation(next) {
   world = location.world;
   groundImage = bakeGround(atlas, location, CONFIG.ground.pixelScale);
   obstacles = buildObstacles(location);
+  blizzard = location.blizzard ? createBlizzard(CONFIG.width, CONFIG.height, location.blizzard) : null;
 }
 
 setLocation(DEFAULT_LOCATION);
@@ -331,6 +335,8 @@ const menuHeroes = [new Animator(atlas, 'hero.idle.down'), new Animator(atlas, '
 function update(dt) {
   transition.update(dt);
   if (mode === 'menu') for (const hero of menuHeroes) hero.update(dt);
+  // Метель идёт в меню и в живом забеге; пауза и выбор апгрейда замораживают её.
+  if (mode === 'menu' || (mode === 'playing' && !summary && !offers)) blizzard?.update(dt);
 
   // Тряска доигрывает и после смерти игрока, но замирает вместе с миром на паузе.
   if (mode === 'playing' && !offers) camera.updateShake(dt, CONFIG.shake);
@@ -339,7 +345,7 @@ function update(dt) {
   if (mode !== 'playing' || summary || offers) return;
 
   elapsed += dt;
-  player.update(dt, input, world);
+  player.update(dt, input, world, location.surface?.grip);
   collideBody(player, obstacles);
 
   // Когда время локации вышло, выходит босс, а обычные волны прекращаются.
@@ -466,6 +472,9 @@ function drawLighting() {
     Math.round(camera.x + camera.shakeX),
     Math.round(camera.y + camera.shakeY),
   );
+
+  // Белая пелена поверх тьмы, под HUD: в метель видно только вокруг героя.
+  blizzard?.draw(ctx, player.x - camera.x - camera.shakeX, player.y - camera.y - camera.shakeY);
 }
 
 /** Тени всех, кто стоит на земле, — одним слоем под спрайтами. */

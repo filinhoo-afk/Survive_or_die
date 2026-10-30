@@ -14,6 +14,9 @@ export class Player {
     this.radius = CONFIG.player.radius;
     this.speed = CONFIG.player.speed;
     this.facing = { x: 0, y: 1 };
+    /** Текущая скорость: на льду она отстаёт от нажатых клавиш. */
+    this.vx = 0;
+    this.vy = 0;
 
     this.maxHp = CONFIG.player.maxHp;
     this.hp = this.maxHp;
@@ -70,7 +73,12 @@ export class Player {
     return gained;
   }
 
-  update(dt, input, bounds) {
+  /**
+   * @param {{width: number, height: number}} bounds границы мира
+   * @param {number} [grip] сцепление с полом, 1/с: на льду скорость догоняет
+   *   желаемую не сразу; без него (или Infinity) герой стартует и встаёт мгновенно
+   */
+  update(dt, input, bounds, grip = Infinity) {
     if (this.alive && this.regen > 0) {
       this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
     }
@@ -84,8 +92,19 @@ export class Player {
 
     const axis = input.getAxis();
 
-    this.x += axis.x * this.speed * dt;
-    this.y += axis.y * this.speed * dt;
+    const targetX = axis.x * this.speed;
+    const targetY = axis.y * this.speed;
+    if (Number.isFinite(grip)) {
+      const k = 1 - Math.exp(-grip * dt);
+      this.vx += (targetX - this.vx) * k;
+      this.vy += (targetY - this.vy) * k;
+    } else {
+      this.vx = targetX;
+      this.vy = targetY;
+    }
+
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
 
     this.moving = axis.x !== 0 || axis.y !== 0;
     if (this.moving) this.facing = axis;

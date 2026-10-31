@@ -117,6 +117,26 @@ const NECROMANCER_BODY = [
 /** Тот же некромант с жёлтыми глазами и огнём: прицел перед призывом. */
 const NECROMANCER_AIM = NECROMANCER_BODY.map((row) => row.replace(/[el]/g, 'g'));
 
+/** Ледяной червь: голова с раскрытой пастью, сегменты уходят влево. */
+const ICEWORM_BODY = [
+  '.....oooooo.....',
+  '...ooiiiiiioo...',
+  '..oiimmmmmmmmo..',
+  '.oiimmmmmmmmmmdo',
+  '.oimmeemmmmmmmdo',
+  '.oimmeemmmmmmmdo',
+  'oimmmmmmmmmmmmdo',
+  'oimmmmmmooooosso',
+  'oimmmmmmorrrrrso',
+  'oimmmmmmooooosso',
+  'oidmmmmmmmmmmddo',
+  '.oddmmmmmmmmddo.',
+  '..oodddddddddoo.',
+];
+
+/** Тот же червь с горящими глазами: вот-вот нырнёт. */
+const ICEWORM_AIM = ICEWORM_BODY.map((row) => row.replace(/e/g, 'g'));
+
 /** Призрак: балахон без ног, низ колышется (последняя строка — два положения). */
 const GHOST_BODY = [
   '....oooo....',
@@ -211,6 +231,18 @@ const guardianPalette = {
   w: '#f2ffe8',
 };
 
+const icewormPalette = {
+  o: '#0b1626',
+  i: '#d6f2ff',
+  m: '#6fb6e6',
+  d: '#3b6fa0',
+  e: '#ff5a3c',
+  r: '#5a1020',
+  s: '#ffffff',
+  g: '#fff07a',
+  w: '#ffffff',
+};
+
 const necromancerPalette = {
   o: '#12081c',
   p: '#5a2f8a',
@@ -284,6 +316,19 @@ export const ENEMY_CLIPS = {
       'necromancer.aim': {
         palette: necromancerPalette,
         frames: legged(NECROMANCER_AIM, '..oo.oo.oo.oo..', '...oo.oo.oo.o..'),
+        fps: 8,
+        anchor: { x: 0.5, y: 0.5 },
+      },
+    },
+  }),
+  ...enemyClips('iceworm', {
+    palette: { ...icewormPalette },
+    frames: legged(ICEWORM_BODY, '.ooo..ooo..ooo..', '..ooo..ooo..ooo.'),
+    fps: 2,
+    extra: {
+      'iceworm.aim': {
+        palette: icewormPalette,
+        frames: legged(ICEWORM_AIM, '.ooo..ooo..ooo..', '..ooo..ooo..ooo.'),
         fps: 8,
         anchor: { x: 0.5, y: 0.5 },
       },

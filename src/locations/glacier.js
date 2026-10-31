@@ -5,13 +5,15 @@
 export const GLACIER = {
   id: 'glacier',
   title: 'Ледник',
-  /** Босса пока нет (он выйдет на 39-й день), поэтому забег идёт без конца. */
-  duration: null,
+  /** Секунд до босса: восемь минут. */
+  duration: 480,
   world: { width: 3200, height: 2000 },
   colors: {
     outside: '#070b12',
     border: '#5a86ab',
   },
+  /** Босс, который выходит, когда истекает duration. */
+  boss: 'iceworm',
   enemies: ['wolf', 'grunt', 'swarm', 'shooter', 'tank'],
   /** Лёд: grip — как быстро скорость догоняет желаемую (1/с); у обычной земли сцепление мгновенное. */
   surface: { grip: 2.4 },

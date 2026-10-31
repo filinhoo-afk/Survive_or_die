@@ -14,6 +14,7 @@ import {
 import { Effects } from './systems/effects.js';
 import { Boss } from './entities/boss.js';
 import { Necromancer } from './entities/necromancer.js';
+import { IceWorm } from './entities/iceworm.js';
 import { ENEMY_TYPES } from './enemies/types.js';
 import { Gem } from './entities/gem.js';
 import { updateGems } from './systems/pickups.js';
@@ -117,13 +118,15 @@ function newRun() {
   camera.snapTo(player);
 }
 
+/** Боссы со своим поведением; остальные — обычный Boss. */
+const BOSS_CLASSES = { necromancer: Necromancer, iceworm: IceWorm };
+
 /** Босс выходит из-за края кадра, как и обычные враги. */
 function spawnBoss() {
   const point = spawner.pickSpawnPoint(camera);
   const type = ENEMY_TYPES[location.boss];
-  boss = type.id === 'necromancer'
-    ? new Necromancer(point.x, point.y, type, world)
-    : new Boss(point.x, point.y, type);
+  const BossClass = BOSS_CLASSES[type.id] ?? Boss;
+  boss = new BossClass(point.x, point.y, type, world);
   enemies.push(boss);
   audio.play('levelUp');
   camera.addShake(CONFIG.shake.playerHit);
@@ -353,10 +356,12 @@ function update(dt) {
   if (!boss) spawner.update(dt, enemies, camera);
 
   // Призванных боссом врагов он кладёт в тот же список: идём по копии.
+  // Урон от ударов босса тоже считается здесь, поэтому здоровье запоминаем до них.
+  const hpBefore = player.hp;
   for (const enemy of [...enemies]) enemy.update(dt, player, enemyShots, enemies);
+  if (boss?.slammed) camera.addShake(CONFIG.shake.playerHit);
   separate(enemies);
   collideBodies(enemies, obstacles);
-  const hpBefore = player.hp;
   applyContactDamage(player, enemies);
 
   for (const shot of enemyShots) shot.update(dt);
@@ -441,6 +446,7 @@ function render() {
   const scene = { player, enemies };
   arsenal.draw(ctx, scene, 'under');
   effects.draw(ctx);
+  if (boss?.alive) boss.drawGround?.(ctx);
   // Враги и игрок — в одном списке: кто ниже на экране, тот рисуется поверх.
   for (const body of sortByDepth([player, ...enemies, ...obstacles])) body.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
@@ -482,7 +488,7 @@ function drawShadows() {
   const cfg = CONFIG.shadows;
   for (const gem of gems) drawShadow(ctx, gem.x, gem.y + 8, cfg.gemRadius, cfg);
   for (const o of obstacles) drawShadow(ctx, o.x, o.footY, o.radius * 1.2, cfg);
-  for (const enemy of enemies) drawShadow(ctx, enemy.x, enemy.footY, enemy.radius, cfg);
+  for (const enemy of enemies) if (!enemy.underground) drawShadow(ctx, enemy.x, enemy.footY, enemy.radius, cfg);
   if (player.visible) drawShadow(ctx, player.x, player.footY, player.radius, cfg);
 }
 

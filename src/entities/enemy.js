@@ -38,6 +38,8 @@ export class Enemy {
     /** Только у стрелков: секунд до следующего прицеливания и до выстрела. */
     this.shotCooldown = type.ranged ? Math.random() * type.ranged.cooldown : 0;
     this.aimLeft = 0;
+    /** Под землёй враг неуязвим, не бьёт касанием и не попадает в цели оружия. */
+    this.underground = false;
 
     // Фаза шага случайна по той же причине, что и фаза петляния.
     this.animator = new Animator(atlas, `${type.id}.walk`);
@@ -56,7 +58,7 @@ export class Enemy {
    * @returns {boolean} убит ли враг этим попаданием
    */
   takeHit(amount, directionX, directionY, knockbackScale = 1) {
-    if (!this.alive) return false;
+    if (!this.alive || this.underground) return false;
 
     const crit = Math.random() < CONFIG.crit.chance;
     const dealt = Math.round(crit ? amount * CONFIG.crit.multiplier : amount);

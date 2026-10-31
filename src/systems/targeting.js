@@ -7,7 +7,7 @@ export function nearestEnemies(from, enemies, maxRange, count) {
   const inRange = [];
 
   for (const enemy of enemies) {
-    if (enemy.alive === false) continue;
+    if (enemy.alive === false || enemy.underground) continue;
     const dx = enemy.x - from.x;
     const dy = enemy.y - from.y;
     const distance = dx * dx + dy * dy;

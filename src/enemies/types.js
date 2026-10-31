@@ -235,6 +235,28 @@ export const ENEMY_TYPES = {
     showHealthBar: false,
     boss: true,
   },
+
+  /** Босс ледника: уходит под лёд и бьёт снизу там, где стоял игрок. */
+  iceworm: {
+    id: 'iceworm',
+    title: 'Ледяной червь',
+    from: Infinity,
+    radius: 44,
+    speed: 50,
+    hp: 3400,
+    damage: 30,
+    xp: 100,
+    color: '#6fb6e6',
+    barColor: '#6fb6e6',
+    spriteScale: 6,
+    weight: 0,
+    pack: 1,
+    mass: 30,
+    knockbackResist: 0.98,
+    wobble: 0,
+    showHealthBar: false,
+    boss: true,
+  },
 };
 
 export const ENEMY_TYPE_LIST = Object.values(ENEMY_TYPES);

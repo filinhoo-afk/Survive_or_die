@@ -8,6 +8,7 @@ export function applyContactDamage(player, enemies) {
   if (!player.alive || player.invulnerableFor > 0) return null;
 
   for (const enemy of enemies) {
+    if (enemy.underground) continue;
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
     const reach = player.radius + enemy.radius;
@@ -53,7 +54,7 @@ export function resolveProjectileHits(projectiles, enemies) {
     if (shot.expired) continue;
 
     for (const enemy of enemies) {
-      if (!enemy.alive || shot.hitEnemies.has(enemy)) continue;
+      if (!enemy.alive || enemy.underground || shot.hitEnemies.has(enemy)) continue;
 
       const dx = enemy.x - shot.x;
       const dy = enemy.y - shot.y;

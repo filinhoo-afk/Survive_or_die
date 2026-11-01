@@ -286,6 +286,37 @@ const GLACIER_PALETTE = {
   B: '#3a2412',
 };
 
+const OBELISK = [
+  '.....o.....',
+  '....oVo....',
+  '...ovVvo...',
+  '...ovVvo...',
+  '...ovPvo...',
+  '..ovvPvvo..',
+  '..ovvPvvo..',
+  '..ovvvvVo..',
+  '..oVvvvVo..',
+  '.oooooooo..',
+  'oVVVVVVVVVo',
+  'ooooooooooo',
+];
+
+const VOID_CRACK = [
+  '.....p..',
+  '..p.pp.p',
+  '.ppPPpp.',
+  'pp.PP.pp',
+  '....P...',
+];
+
+const ABYSS_PALETTE = {
+  ...DECOR_PALETTE,
+  v: '#4a3a6a',
+  V: '#2c2142',
+  p: '#8a3fd0',
+  P: '#d79bff',
+};
+
 export const TERRAIN_CLIPS = {
   ...Object.fromEntries(
     LOCATION_LIST.flatMap((location) =>
@@ -314,4 +345,6 @@ export const TERRAIN_CLIPS = {
   'decor.crystal': { palette: GLACIER_PALETTE, frames: [CRYSTAL] },
   'obstacle.icerock': { palette: GLACIER_PALETTE, frames: [ICE_ROCK] },
   'obstacle.snowpine': { palette: GLACIER_PALETTE, frames: [SNOW_PINE] },
+  'obstacle.obelisk': { palette: ABYSS_PALETTE, frames: [OBELISK] },
+  'decor.voidcrack': { palette: ABYSS_PALETTE, frames: [VOID_CRACK] },
 };

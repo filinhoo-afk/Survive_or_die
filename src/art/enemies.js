@@ -117,6 +117,36 @@ const NECROMANCER_BODY = [
 /** Тот же некромант с жёлтыми глазами и огнём: прицел перед призывом. */
 const NECROMANCER_AIM = NECROMANCER_BODY.map((row) => row.replace(/[el]/g, 'g'));
 
+/** Владыка Бездны: рога, четыре красных глаза-щели и пасть с зубами. */
+const ABYSSAL_BODY = [
+  'h.....ooo.....h',
+  'hh..ooppppo..hh',
+  '.hhoppppppppohh',
+  '..oppppppppppo.',
+  '.opppeepppeepo.',
+  '.opppeepppeepo.',
+  '.oppppppppppppo',
+  '.opppooooooppdo',
+  '.opppowowowpddo',
+  '.oppppppppppddo',
+  '..oppdppppdppo.',
+  '..oddppppppddo.',
+  '...ooddddddoo..',
+];
+
+/** Тот же Владыка с жёлтыми глазами: вот-вот ударит. */
+const ABYSSAL_AIM = ABYSSAL_BODY.map((row) => row.replace(/e/g, 'g'));
+
+const abyssalPalette = {
+  o: '#0a0412',
+  p: '#4a1f6e',
+  d: '#2c1245',
+  h: '#d8cfe8',
+  e: '#ff3c6e',
+  g: '#fff07a',
+  w: '#ffffff',
+};
+
 /** Ледяной червь: голова с раскрытой пастью, сегменты уходят влево. */
 const ICEWORM_BODY = [
   '.....oooooo.....',
@@ -329,6 +359,19 @@ export const ENEMY_CLIPS = {
       'iceworm.aim': {
         palette: icewormPalette,
         frames: legged(ICEWORM_AIM, '.ooo..ooo..ooo..', '..ooo..ooo..ooo.'),
+        fps: 8,
+        anchor: { x: 0.5, y: 0.5 },
+      },
+    },
+  }),
+  ...enemyClips('abyssal', {
+    palette: { ...abyssalPalette },
+    frames: legged(ABYSSAL_BODY, '..oo.oo.oo.oo..', '...oo.oo.oo.o..'),
+    fps: 2,
+    extra: {
+      'abyssal.aim': {
+        palette: abyssalPalette,
+        frames: legged(ABYSSAL_AIM, '..oo.oo.oo.oo..', '...oo.oo.oo.o..'),
         fps: 8,
         anchor: { x: 0.5, y: 0.5 },
       },

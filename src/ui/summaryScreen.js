@@ -31,7 +31,7 @@ export function drawSummaryScreen(ctx, canvas, summary) {
 
   const { victory } = summary;
   if (victory) {
-    drawText(ctx, 'ЛОКАЦИЯ ПРОЙДЕНА', cx, 28, { scale: 5, align: 'center', color: C.record });
+    drawText(ctx, summary.next ? 'ЛОКАЦИЯ ПРОЙДЕНА' : 'КАМПАНИЯ ПРОЙДЕНА', cx, 28, { scale: 5, align: 'center', color: C.record });
   } else {
     drawText(ctx, 'ВЫ ПОГИБЛИ', cx, 28, { scale: 5, align: 'center', color: C.danger });
   }

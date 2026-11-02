@@ -15,6 +15,7 @@ import { Effects } from './systems/effects.js';
 import { Boss } from './entities/boss.js';
 import { Necromancer } from './entities/necromancer.js';
 import { IceWorm } from './entities/iceworm.js';
+import { AbyssLord } from './entities/abysslord.js';
 import { ENEMY_TYPES } from './enemies/types.js';
 import { Gem } from './entities/gem.js';
 import { updateGems } from './systems/pickups.js';
@@ -119,7 +120,7 @@ function newRun() {
 }
 
 /** Боссы со своим поведением; остальные — обычный Boss. */
-const BOSS_CLASSES = { necromancer: Necromancer, iceworm: IceWorm };
+const BOSS_CLASSES = { necromancer: Necromancer, iceworm: IceWorm, abyssal: AbyssLord };
 
 /** Босс выходит из-за края кадра, как и обычные враги. */
 function spawnBoss() {

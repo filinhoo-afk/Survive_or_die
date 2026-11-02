@@ -257,6 +257,28 @@ export const ENEMY_TYPES = {
     showHealthBar: false,
     boss: true,
   },
+
+  /** Финальный босс бездны: три фазы — залпы, прыжки с призывом, разломы. */
+  abyssal: {
+    id: 'abyssal',
+    title: 'Владыка Бездны',
+    from: Infinity,
+    radius: 46,
+    speed: 60,
+    hp: 5000,
+    damage: 35,
+    xp: 200,
+    color: '#a24cd8',
+    barColor: '#a24cd8',
+    spriteScale: 6,
+    weight: 0,
+    pack: 1,
+    mass: 30,
+    knockbackResist: 0.98,
+    wobble: 0,
+    showHealthBar: false,
+    boss: true,
+  },
 };
 
 export const ENEMY_TYPE_LIST = Object.values(ENEMY_TYPES);

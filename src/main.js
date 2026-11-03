@@ -25,6 +25,7 @@ import { pruneProjectiles } from './systems/weapons.js';
 import { Arsenal } from './systems/arsenal.js';
 import * as audio from './engine/audio.js';
 import { loadRecord, submitRun } from './systems/records.js';
+import { isUnlocked, loadCleared, markCleared } from './systems/campaign.js';
 import { drawSummaryScreen } from './ui/summaryScreen.js';
 import { formatTime } from './ui/format.js';
 import { drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
@@ -164,12 +165,25 @@ const transition = createTransition();
 
 const MENU_SHIFT = { ArrowLeft: -1, KeyA: -1, ArrowRight: 1, KeyD: 1 };
 
+/** Пройденные локации кампании. */
+let cleared = loadCleared();
+
+function locationOpen(target = location) {
+  return isUnlocked(LOCATION_LIST, LOCATION_LIST.indexOf(target), cleared);
+}
+
 /** Выбор локации в меню: листаем список по кругу и пересобираем мир на фоне. */
 function shiftLocation(step) {
   const index = LOCATION_LIST.indexOf(location);
   setLocation(LOCATION_LIST[(index + step + LOCATION_LIST.length) % LOCATION_LIST.length]);
   newRun();
   audio.play('pick');
+}
+
+/** Из меню в забег; закрытая локация не стартует. */
+function startFromMenu() {
+  if (locationOpen()) startRunFaded();
+  else audio.play('hit');
 }
 
 function startRun() {
@@ -225,7 +239,7 @@ window.addEventListener('keydown', (event) => {
   if (transition.busy) return;
 
   if (mode === 'menu') {
-    if (event.code === 'Enter' || event.code === 'Space') startRunFaded();
+    if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
     return;
   }
@@ -280,7 +294,7 @@ canvas.addEventListener('click', (event) => {
   audio.startMusic();
   if (transition.busy) return;
   if (mode === 'menu') {
-    startRunFaded();
+    startFromMenu();
     return;
   }
   if (mode === 'paused') {
@@ -323,6 +337,7 @@ function finishRun(victory = false) {
     killsByType,
     build: upgrades.summary(),
   };
+  if (victory) cleared = markCleared(cleared, location.id);
   const result = submitRun(stats);
   record = result.record;
   summary = { stats, result, victory, location, next: victory ? nextLocation() : undefined };
@@ -653,7 +668,11 @@ function drawStats() {
 }
 
 function drawMenu() {
-  drawMenuScreen(ctx, canvas, record, location, LOCATION_LIST.length > 1);
+  drawMenuScreen(ctx, canvas, record, {
+    list: LOCATION_LIST,
+    selected: LOCATION_LIST.indexOf(location),
+    cleared,
+  });
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

@@ -18,6 +18,7 @@ import { IceWorm } from './entities/iceworm.js';
 import { AbyssLord } from './entities/abysslord.js';
 import { ENEMY_TYPES } from './enemies/types.js';
 import { Gem } from './entities/gem.js';
+import { Chest } from './entities/chest.js';
 import { updateGems } from './systems/pickups.js';
 import { UpgradeState } from './systems/upgrades.js';
 import { cardAt, drawUpgradeScreen } from './ui/upgradeScreen.js';
@@ -114,6 +115,7 @@ function newRun() {
   crits = 0;
   summary = null;
   victoryDelay = 0;
+  chest = null;
 
   // Первая волна сразу, чтобы игра не начиналась с пустого ожидания.
   spawner.spawnWave(enemies, camera);
@@ -321,7 +323,20 @@ let crits = 0;
 let summary = null;
 /** Секунд до экрана победы после падения босса; 0 — босс ещё жив. */
 let victoryDelay = 0;
-const VICTORY_DELAY = 2.5;
+const VICTORY_DELAY = 1.5;
+/** Сундук с наградой за босса: null, пока босс жив. */
+let chest = null;
+
+/** Награда: полное лечение и бесплатное улучшение на выбор. */
+function openChest() {
+  chest.open();
+  player.hp = player.maxHp;
+  pendingLevels += 1;
+  audio.play('levelUp');
+  effects.deathBurst(chest.x, chest.y, '#ffd65a', 2);
+  effects.levelUp(chest.x, chest.y, player.level);
+  camera.addShake(CONFIG.shake.crit);
+}
 /** Лучшие показатели — для главного меню. */
 let record = loadRecord();
 
@@ -429,15 +444,21 @@ function update(dt) {
   if (!player.alive) {
     finishRun();
   } else if (boss && !boss.alive) {
-    // Босс пал: оставшиеся снаряды гаснут, пару секунд герой празднует.
-    if (victoryDelay === 0) {
+    if (!chest) {
+      // Босс пал: оставшиеся снаряды гаснут, на его месте появляется сундук.
       enemyShots.length = 0;
       boss.dismissMinions?.(enemies);
       audio.play('record');
       camera.addShake(CONFIG.shake.playerDeath);
+      chest = new Chest(boss.x, boss.y);
+    } else if (!chest.opened) {
+      chest.update(dt);
+      if (chest.reachedBy(player)) openChest();
+    } else {
+      // Награда получена и выбрана — пару секунд празднуем и идём к итогам.
+      victoryDelay += dt;
+      if (victoryDelay >= VICTORY_DELAY) finishRun(true);
     }
-    victoryDelay += dt;
-    if (victoryDelay >= VICTORY_DELAY) finishRun(true);
   }
 }
 
@@ -458,6 +479,7 @@ function render() {
 
   drawWorld();
   drawShadows();
+  chest?.draw(ctx);
   for (const gem of gems) gem.draw(ctx);
   const scene = { player, enemies };
   arsenal.draw(ctx, scene, 'under');
@@ -541,7 +563,8 @@ function drawHud() {
   if (boss?.alive) {
     drawBossBar();
   } else if (boss) {
-    drawText(ctx, `${boss.type.title.toUpperCase()} ПОВЕРЖЕН`, canvas.width / 2, 52, {
+    const label = chest?.opened ? 'ПОВЕРЖЕН' : 'ПОВЕРЖЕН — ОТКРОЙ СУНДУК';
+    drawText(ctx, `${boss.type.title.toUpperCase()} ${label}`, canvas.width / 2, 52, {
       scale: 2,
       align: 'center',
       color: colors.hudText,

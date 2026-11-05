@@ -20,6 +20,16 @@ import { ENEMY_TYPES } from './enemies/types.js';
 import { Gem } from './entities/gem.js';
 import { Chest } from './entities/chest.js';
 import { updateGems } from './systems/pickups.js';
+import {
+  applyPickup,
+  buildCrates,
+  crateLoot,
+  enemyDrop,
+  hitCrates,
+  removeBroken,
+  spawnPickup,
+  updatePickups,
+} from './systems/items.js';
 import { UpgradeState } from './systems/upgrades.js';
 import { cardAt, drawUpgradeScreen } from './ui/upgradeScreen.js';
 import { pruneProjectiles } from './systems/weapons.js';
@@ -74,6 +84,9 @@ let enemies;
 let projectiles;
 let enemyShots;
 let gems;
+/** Разрушаемые ящики на карте и выпавшие предметы. */
+let crates;
+let pickups;
 let spawner;
 let arsenal;
 let effects;
@@ -93,6 +106,8 @@ function newRun() {
   projectiles = [];
   enemyShots = [];
   gems = [];
+  crates = buildCrates(world, obstacles);
+  pickups = [];
   spawner = new Spawner(world, location.enemies);
   arsenal = new Arsenal();
   arsenal.add('cannon');
@@ -412,6 +427,24 @@ function update(dt) {
   blockShots(projectiles, obstacles);
   killed.push(...resolveProjectileHits(projectiles, enemies));
 
+  // Ящики ломаются от снарядов; подобранный предмет срабатывает сразу,
+  // а жертвы бомбы идут в общий список убитых.
+  for (const crate of crates) crate.update(dt);
+  for (const crate of hitCrates(projectiles, crates)) {
+    effects.deathBurst(crate.x, crate.y, '#9a6a36', 1);
+    audio.play('kill');
+    const loot = crateLoot();
+    if (loot === 'gem') gems.push(new Gem(crate.x, crate.y, 5));
+    else spawnPickup(pickups, crate.x, crate.y, loot);
+  }
+  removeBroken(crates);
+  for (const pickup of updatePickups(pickups, player, dt)) {
+    audio.play('pick');
+    effects.deathBurst(pickup.x, pickup.y, pickup.info.color, 1.5);
+    killed.push(...applyPickup(pickup, { player, gems, enemies, boss }));
+    if (pickup.kind === 'bomb') camera.addShake(CONFIG.shake.playerHit);
+  }
+
   kills += killed.length;
   for (const enemy of killed) killsByType[enemy.type.id] = (killsByType[enemy.type.id] ?? 0) + 1;
   if (killed.length > 0) {
@@ -422,6 +455,8 @@ function update(dt) {
     effects.corpse(enemy);
     effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
     gems.push(new Gem(enemy.x, enemy.y, enemy.xp));
+    const drop = enemyDrop();
+    if (drop) spawnPickup(pickups, enemy.x, enemy.y, drop);
   }
 
   const xpGained = updateGems(gems, player, dt);
@@ -480,13 +515,14 @@ function render() {
   drawWorld();
   drawShadows();
   chest?.draw(ctx);
+  for (const pickup of pickups) pickup.draw(ctx);
   for (const gem of gems) gem.draw(ctx);
   const scene = { player, enemies };
   arsenal.draw(ctx, scene, 'under');
   effects.draw(ctx);
   if (boss?.alive) boss.drawGround?.(ctx);
   // Враги и игрок — в одном списке: кто ниже на экране, тот рисуется поверх.
-  for (const body of sortByDepth([player, ...enemies, ...obstacles])) body.draw(ctx);
+  for (const body of sortByDepth([player, ...enemies, ...obstacles, ...crates])) body.draw(ctx);
   for (const shot of projectiles) shot.draw(ctx);
   for (const shot of enemyShots) shot.draw(ctx);
   arsenal.draw(ctx, scene, 'over');
@@ -510,6 +546,9 @@ function drawLighting() {
   for (const shot of projectiles) lights.push({ x: shot.x, y: shot.y, ...cfg.projectile });
   for (const shot of enemyShots) lights.push({ x: shot.x, y: shot.y, ...cfg.enemyShot });
   for (const gem of gems) lights.push({ x: gem.x, y: gem.y, ...cfg.gem });
+  for (const pickup of pickups) {
+    lights.push({ x: pickup.x, y: pickup.y, ...cfg.gem, color: pickup.info.color });
+  }
   lighting.draw(
     ctx,
     lights,
@@ -526,6 +565,7 @@ function drawShadows() {
   const cfg = CONFIG.shadows;
   for (const gem of gems) drawShadow(ctx, gem.x, gem.y + 8, cfg.gemRadius, cfg);
   for (const o of obstacles) drawShadow(ctx, o.x, o.footY, o.radius * 1.2, cfg);
+  for (const c of crates) drawShadow(ctx, c.x, c.footY, c.radius, cfg);
   for (const enemy of enemies) if (!enemy.underground) drawShadow(ctx, enemy.x, enemy.footY, enemy.radius, cfg);
   if (player.visible) drawShadow(ctx, player.x, player.footY, player.radius, cfg);
 }

@@ -1,6 +1,7 @@
 import { CONFIG } from '../config.js';
 import { Enemy } from '../entities/enemy.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
+import { eliteChance, rollModifier } from '../enemies/elites.js';
 
 /** Разброс стаи вокруг точки появления, пикселей. */
 const PACK_SPREAD = 28;
@@ -82,7 +83,9 @@ export class Spawner {
         const offset = k === 0 ? 0 : Math.random() * PACK_SPREAD;
         const x = clamp(point.x + Math.cos(angle) * offset, inset, this.world.width - inset);
         const y = clamp(point.y + Math.sin(angle) * offset, inset, this.world.height - inset);
-        enemies.push(new Enemy(x, y, type, this.hpScale));
+        // Элитой становится только одиночка: из стаи роя элита не нужна.
+        const elite = type.pack === 1 && Math.random() < eliteChance(this.time);
+        enemies.push(new Enemy(x, y, type, this.hpScale, elite ? rollModifier() : null));
         spawned += 1;
       }
     }

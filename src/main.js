@@ -25,6 +25,7 @@ import {
   buildCrates,
   crateLoot,
   enemyDrop,
+  rollEliteDrop,
   hitCrates,
   removeBroken,
   spawnPickup,
@@ -455,7 +456,7 @@ function update(dt) {
     effects.corpse(enemy);
     effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
     gems.push(new Gem(enemy.x, enemy.y, enemy.xp));
-    const drop = enemyDrop();
+    const drop = enemy.modifier?.drop ? rollEliteDrop() : enemyDrop();
     if (drop) spawnPickup(pickups, enemy.x, enemy.y, drop);
   }
 
@@ -768,9 +769,9 @@ function drawMinimap() {
   for (const o of obstacles) ctx.fillRect(x + o.x * scale - 1, y + o.y * scale - 1, 2, 2);
 
   for (const enemy of enemies) {
-    ctx.fillStyle = enemy.color;
+    ctx.fillStyle = enemy.elite ? enemy.modifier.color : enemy.color;
     ctx.beginPath();
-    ctx.arc(x + enemy.x * scale, y + enemy.y * scale, 2, 0, Math.PI * 2);
+    ctx.arc(x + enemy.x * scale, y + enemy.y * scale, enemy.elite ? 3.5 : 2, 0, Math.PI * 2);
     ctx.fill();
   }
 

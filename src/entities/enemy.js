@@ -3,6 +3,7 @@ import { ENEMY_TYPES } from '../enemies/types.js';
 import { EnemyShot } from './enemyShot.js';
 import { atlas } from '../art/index.js';
 import { Animator } from '../gfx/animator.js';
+import { ELITE } from '../enemies/elites.js';
 
 let hitListener = null;
 
@@ -13,20 +14,30 @@ export function setHitListener(fn) {
 
 /** Враг бежит к игроку; как именно и насколько опасен — решает его тип. */
 export class Enemy {
-  /** @param {number} [hpScale] множитель здоровья — растёт вместе со временем забега */
-  constructor(x, y, type = ENEMY_TYPES.grunt, hpScale = 1) {
+  /**
+   * @param {number} [hpScale] множитель здоровья — растёт вместе со временем забега
+   * @param {object} [modifier] модификатор элиты (enemies/elites.js); без него враг обычный
+   */
+  constructor(x, y, type = ENEMY_TYPES.grunt, hpScale = 1, modifier = null) {
     this.x = x;
     this.y = y;
     this.type = type;
-    this.radius = type.radius;
-    this.speed = type.speed;
-    this.damage = type.damage;
-    this.xp = type.xp;
+    this.modifier = modifier;
+    this.elite = modifier !== null;
+    const m = modifier ?? {};
+
+    // Элита крупнее: пиксель спрайта целый, радиус растёт вместе с ним.
+    this.spriteScale = this.elite ? Math.round(type.spriteScale * ELITE.size) : type.spriteScale;
+    this.radius = (type.radius * this.spriteScale) / type.spriteScale;
+    this.speed = type.speed * (m.speed ?? 1);
+    this.damage = Math.round(type.damage * (m.damage ?? 1));
+    this.xp = Math.round(type.xp * (this.elite ? ELITE.xp : 1) * (m.xp ?? 1));
     this.color = type.color;
-    this.mass = type.mass;
+    this.mass = type.mass * (this.elite ? 2 : 1);
+    this.knockbackResist = Math.min(0.95, type.knockbackResist + (m.knockbackResist ?? 0));
     this.angle = 0;
 
-    this.maxHp = Math.round(type.hp * hpScale);
+    this.maxHp = Math.round(type.hp * hpScale * (this.elite ? ELITE.hp : 1) * (m.hp ?? 1));
     this.hp = this.maxHp;
     this.alive = true;
     /** Сколько секунд ещё гореть белым после попадания. */
@@ -67,7 +78,7 @@ export class Enemy {
     this.hp = Math.max(0, this.hp - dealt);
     this.flashFor = CONFIG.enemy.hitFlash;
 
-    const push = CONFIG.enemy.knockback * knockbackScale * (1 - this.type.knockbackResist);
+    const push = CONFIG.enemy.knockback * knockbackScale * (1 - this.knockbackResist);
     this.x += directionX * push;
     this.y += directionY * push;
 
@@ -162,14 +173,28 @@ export class Enemy {
   draw(ctx) {
     // Клипы одного типа поделены на кадры одинаково, шаг не сбрасывается.
     this.animator.swap(this.clipName);
+    if (this.elite) this.drawEliteRing(ctx);
     if (this.type.ghost) ctx.globalAlpha = 0.72;
     this.animator.draw(ctx, this.x, this.y, {
-      scale: this.type.spriteScale,
+      scale: this.spriteScale,
       flipX: this.facingLeft,
     });
     ctx.globalAlpha = 1;
 
-    if (this.type.showHealthBar && this.hp < this.maxHp) this.drawHealthBar(ctx);
+    if ((this.type.showHealthBar || this.elite) && this.hp < this.maxHp) this.drawHealthBar(ctx);
+  }
+
+  /** Пульсирующий ободок под ногами цвета модификатора. */
+  drawEliteRing(ctx) {
+    const pulse = 0.55 + Math.sin(this.age * 5) * 0.2;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = this.modifier.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(this.x, this.footY - 2, this.radius * 1.15, this.radius * 0.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawHealthBar(ctx) {
@@ -179,7 +204,7 @@ export class Enemy {
 
     ctx.fillStyle = 'rgba(8, 10, 16, 0.8)';
     ctx.fillRect(x - 1, y - 1, width + 2, 6);
-    ctx.fillStyle = this.color;
+    ctx.fillStyle = this.elite ? this.modifier.color : this.color;
     ctx.fillRect(x, y, width * (this.hp / this.maxHp), 4);
   }
 }

@@ -36,7 +36,7 @@ export class Effects {
       x: enemy.x,
       y: enemy.y,
       animator,
-      scale: enemy.type.spriteScale,
+      scale: enemy.spriteScale,
       flipX: enemy.facingLeft,
       age: 0,
       // Последний кадр держится ещё одну долю цикла и тает.

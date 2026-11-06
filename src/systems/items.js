@@ -78,6 +78,11 @@ export function enemyDrop() {
   return Math.random() < ENEMY_DROP ? rollLoot(CRATE_LOOT.filter(([k]) => k !== 'gem')) : null;
 }
 
+/** Награда «богатой» элиты: всегда предмет. */
+export function rollEliteDrop() {
+  return rollLoot(CRATE_LOOT.filter(([k]) => k !== 'gem'));
+}
+
 export function spawnPickup(pickups, x, y, kind) {
   pickups.push(new Pickup(x, y, kind));
 }

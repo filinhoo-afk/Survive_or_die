@@ -61,7 +61,7 @@ function drawCampaignMap(ctx, canvas, y, campaign) {
 }
 
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
-export function drawMenuScreen(ctx, canvas, record, campaign) {
+export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0) {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
   const { list, selected, cleared } = campaign;
@@ -80,6 +80,7 @@ export function drawMenuScreen(ctx, canvas, record, campaign) {
   const lines = [
     { text: `${selected + 1}. ${location.title}${status}`, color: open ? C.accent : C.danger },
     { text: 'A / D — выбор локации · WASD — движение', color: C.dim },
+    { text: `B — магазин · золото: ${gold}`, color: C.record },
   ];
   if (record.runs > 0) {
     lines.push({

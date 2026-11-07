@@ -89,6 +89,14 @@ export function drawSummaryScreen(ctx, canvas, summary) {
     y += buildHeight;
   }
 
+  if (summary.gold > 0) {
+    drawText(ctx, `+${formatNumber(summary.gold)} золота`, cx, canvas.height - 62, {
+      scale: 3,
+      align: 'center',
+      color: C.record,
+    });
+  }
+
   let hint = 'R / Enter / клик — заново · Esc — в меню';
   if (victory) {
     hint = summary.next

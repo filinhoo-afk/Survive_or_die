@@ -38,6 +38,8 @@ import { Arsenal } from './systems/arsenal.js';
 import * as audio from './engine/audio.js';
 import { loadRecord, submitRun } from './systems/records.js';
 import { isUnlocked, loadCleared, markCleared } from './systems/campaign.js';
+import { addGold, applyMeta, buy, loadMeta, META_UPGRADES, runGold } from './systems/meta.js';
+import { drawShopScreen, shopRowAt } from './ui/shopScreen.js';
 import { drawSummaryScreen } from './ui/summaryScreen.js';
 import { formatTime } from './ui/format.js';
 import { drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
@@ -95,12 +97,17 @@ let upgrades;
 /** Босс текущего забега: null, пока не вышел. */
 let boss;
 
-/** Режим игры: меню, забег или пауза (поражение — это !player.alive). */
+/** Золото и купленные постоянные улучшения. */
+let meta = loadMeta();
+let shopSelected = 0;
+
+/** Режим игры: меню, магазин, забег или пауза (поражение — это !player.alive). */
 let mode = 'menu';
 
 /** Собирает мир с нуля — и для первого запуска, и для рестарта. */
 function newRun() {
   player = new Player(world.width / 2, world.height / 2);
+  applyMeta(meta, player);
   camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
   enemies = [];
   boss = null;
@@ -204,6 +211,13 @@ function startFromMenu() {
   else audio.play('hit');
 }
 
+/** Покупка в магазине: звук подтверждает или отказывает. */
+function buyUpgrade(index) {
+  const next = index >= 0 ? buy(meta, META_UPGRADES[index].id) : null;
+  if (next) meta = next;
+  audio.play(next ? 'pick' : 'hit');
+}
+
 function startRun() {
   newRun();
   mode = 'playing';
@@ -256,8 +270,19 @@ window.addEventListener('keydown', (event) => {
 
   if (transition.busy) return;
 
+  if (mode === 'shop') {
+    if (event.code === 'Escape' || event.code === 'KeyB') mode = 'menu';
+    else if (event.code === 'KeyW' || event.code === 'ArrowUp') {
+      shopSelected = (shopSelected + META_UPGRADES.length - 1) % META_UPGRADES.length;
+    } else if (event.code === 'KeyS' || event.code === 'ArrowDown') {
+      shopSelected = (shopSelected + 1) % META_UPGRADES.length;
+    } else if (event.code === 'Enter' || event.code === 'Space') buyUpgrade(shopSelected);
+    return;
+  }
+
   if (mode === 'menu') {
-    if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
+    if (event.code === 'KeyB') mode = 'shop';
+    else if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
     return;
   }
@@ -301,6 +326,13 @@ function canvasPoint(event) {
 }
 
 canvas.addEventListener('mousemove', (event) => {
+  if (mode === 'shop') {
+    const { x, y } = canvasPoint(event);
+    const row = shopRowAt(x, y, canvas);
+    if (row >= 0) shopSelected = row;
+    canvas.style.cursor = row >= 0 ? 'pointer' : 'default';
+    return;
+  }
   if (!offers) return;
   const { x, y } = canvasPoint(event);
   hoveredCard = cardAt(x, y, offers.length, canvas);
@@ -311,6 +343,15 @@ canvas.addEventListener('click', (event) => {
   audio.unlock();
   audio.startMusic();
   if (transition.busy) return;
+  if (mode === 'shop') {
+    const { x, y } = canvasPoint(event);
+    const row = shopRowAt(x, y, canvas);
+    if (row >= 0) {
+      shopSelected = row;
+      buyUpgrade(row);
+    }
+    return;
+  }
   if (mode === 'menu') {
     startFromMenu();
     return;
@@ -371,7 +412,9 @@ function finishRun(victory = false) {
   if (victory) cleared = markCleared(cleared, location.id);
   const result = submitRun(stats);
   record = result.record;
-  summary = { stats, result, victory, location, next: victory ? nextLocation() : undefined };
+  const gold = runGold(meta, stats, victory);
+  meta = addGold(meta, gold);
+  summary = { stats, result, victory, location, gold, next: victory ? nextLocation() : undefined };
   if (victory) audio.play('levelUp');
   else if (result.beaten.size > 0) audio.play('record');
 }
@@ -384,7 +427,7 @@ const menuHeroes = [new Animator(atlas, 'hero.idle.down'), new Animator(atlas, '
 
 function update(dt) {
   transition.update(dt);
-  if (mode === 'menu') for (const hero of menuHeroes) hero.update(dt);
+  if (mode === 'menu' || mode === 'shop') for (const hero of menuHeroes) hero.update(dt);
   // Метель идёт в меню и в живом забеге; пауза и выбор апгрейда замораживают её.
   if (mode === 'menu' || (mode === 'playing' && !summary && !offers)) blizzard?.update(dt);
 
@@ -533,7 +576,10 @@ function render() {
   drawLighting();
 
   if (mode === 'menu') drawMenu();
-  else {
+  else if (mode === 'shop') {
+    drawMenu();
+    drawShopScreen(ctx, canvas, meta, shopSelected);
+  } else {
     drawHud();
     if (mode === 'paused') drawPauseScreen(ctx, canvas);
   }
@@ -736,7 +782,7 @@ function drawMenu() {
     list: LOCATION_LIST,
     selected: LOCATION_LIST.indexOf(location),
     cleared,
-  });
+  }, meta.gold);
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

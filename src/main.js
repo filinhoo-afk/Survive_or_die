@@ -35,6 +35,7 @@ import { UpgradeState } from './systems/upgrades.js';
 import { cardAt, drawUpgradeScreen } from './ui/upgradeScreen.js';
 import { pruneProjectiles } from './systems/weapons.js';
 import { Arsenal } from './systems/arsenal.js';
+import { HEROES, applyHero, loadHeroIndex, saveHeroIndex } from './systems/heroes.js';
 import * as audio from './engine/audio.js';
 import { loadRecord, submitRun } from './systems/records.js';
 import { isUnlocked, loadCleared, markCleared } from './systems/campaign.js';
@@ -100,6 +101,8 @@ let boss;
 /** Золото и купленные постоянные улучшения. */
 let meta = loadMeta();
 let shopSelected = 0;
+/** Выбранный в меню персонаж. */
+let heroIndex = loadHeroIndex();
 
 /** Режим игры: меню, магазин, забег или пауза (поражение — это !player.alive). */
 let mode = 'menu';
@@ -107,6 +110,7 @@ let mode = 'menu';
 /** Собирает мир с нуля — и для первого запуска, и для рестарта. */
 function newRun() {
   player = new Player(world.width / 2, world.height / 2);
+  applyHero(HEROES[heroIndex], player);
   applyMeta(meta, player);
   camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
   enemies = [];
@@ -118,7 +122,7 @@ function newRun() {
   pickups = [];
   spawner = new Spawner(world, location.enemies);
   arsenal = new Arsenal();
-  arsenal.add('cannon');
+  arsenal.add(HEROES[heroIndex].weapon);
   effects = new Effects();
   setHitListener((enemy, amount, crit) => {
     // В итоги идёт урон, который враг реально потерял, без перебора на добивании.
@@ -205,6 +209,13 @@ function shiftLocation(step) {
   audio.play('pick');
 }
 
+/** Выбор персонажа в меню: запоминается и применяется на старте забега. */
+function shiftHero(step) {
+  heroIndex = (heroIndex + step + HEROES.length) % HEROES.length;
+  saveHeroIndex(heroIndex);
+  audio.play('pick');
+}
+
 /** Из меню в забег; закрытая локация не стартует. */
 function startFromMenu() {
   if (locationOpen()) startRunFaded();
@@ -284,6 +295,8 @@ window.addEventListener('keydown', (event) => {
     if (event.code === 'KeyB') mode = 'shop';
     else if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
+    else if (event.code === 'KeyW' || event.code === 'ArrowUp') shiftHero(-1);
+    else if (event.code === 'KeyS' || event.code === 'ArrowDown') shiftHero(1);
     return;
   }
 
@@ -782,7 +795,7 @@ function drawMenu() {
     list: LOCATION_LIST,
     selected: LOCATION_LIST.indexOf(location),
     cleared,
-  }, meta.gold);
+  }, meta.gold, HEROES[heroIndex]);
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

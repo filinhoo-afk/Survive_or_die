@@ -61,7 +61,7 @@ function drawCampaignMap(ctx, canvas, y, campaign) {
 }
 
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
-export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0) {
+export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null) {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
   const { list, selected, cleared } = campaign;
@@ -79,7 +79,8 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0) {
     : ` · сначала пройдите: ${list[selected - 1].title}`;
   const lines = [
     { text: `${selected + 1}. ${location.title}${status}`, color: open ? C.accent : C.danger },
-    { text: 'A / D — выбор локации · WASD — движение', color: C.dim },
+    { text: 'A / D — локация · W / S — герой', color: C.dim },
+    ...(hero ? [{ text: `${hero.title}: ${hero.desc}`, color: hero.color }] : []),
     { text: `B — магазин · золото: ${gold}`, color: C.record },
   ];
   if (record.runs > 0) {
@@ -91,7 +92,7 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0) {
   drawHints(ctx, canvas, mapTop + 40 + 22, lines);
 
   if (blink()) {
-    drawText(ctx, open ? 'Enter / Пробел / клик — начать' : 'Локация закрыта', cx, canvas.height - 40, {
+    drawText(ctx, open ? 'Enter / Пробел / клик — начать' : 'Локация закрыта', cx, canvas.height - 24, {
       scale: 2,
       align: 'center',
       color: open ? C.accent : C.danger,

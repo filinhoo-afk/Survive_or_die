@@ -1,4 +1,4 @@
-import { WEAPONS } from '../weapons/index.js';
+import { EVOLUTIONS, WEAPONS } from '../weapons/index.js';
 
 /**
  * Пассивные улучшения игрока. Каждое описано через get / next / set:
@@ -144,16 +144,40 @@ const STAT_FORMAT = {
  * выбора всё равно, что именно он предлагает.
  */
 export class UpgradeState {
-  constructor(arsenal, player, { passives = PASSIVES, weapons = WEAPONS } = {}) {
+  constructor(
+    arsenal,
+    player,
+    { passives = PASSIVES, weapons = WEAPONS, evolutions = EVOLUTIONS } = {},
+  ) {
     this.arsenal = arsenal;
     this.player = player;
     this.passives = passives;
     this.weapons = weapons;
+    this.evolutions = evolutions;
     this.ranks = new Map();
   }
 
   rank(id) {
     return this.ranks.get(id) ?? 0;
+  }
+
+  /** Эволюция, в которую превращается оружие с таким id, или undefined. */
+  evolutionOf(id) {
+    return this.evolutions.find((evolution) => evolution.evolvesFrom === id);
+  }
+
+  /**
+   * Карточки эволюций, которые уже можно взять: оружие прокачано
+   * до упора, а нужная пассивка есть хотя бы первого ранга.
+   */
+  readyEvolutions() {
+    const cards = [];
+    for (const weapon of this.arsenal.weapons) {
+      const evolution = this.evolutionOf(weapon.id);
+      if (!evolution || weapon.canLevelUp || this.rank(evolution.requires) === 0) continue;
+      cards.push(this.evolutionCard(weapon, evolution));
+    }
+    return cards;
   }
 
   /** Все карточки, которые сейчас имеет смысл предложить. */
@@ -182,10 +206,13 @@ export class UpgradeState {
    *
    * Выбор взвешенный: пассивок восемь, а оружейных карточек меньше,
    * и при равных шансах оружие почти перестало бы выпадать.
+   *
+   * Готовая эволюция в выбор попадает всегда: игрок шёл к ней весь забег,
+   * и прятать её за случайностью было бы обидно.
    */
   roll(count, random = Math.random) {
     const pool = this.candidates();
-    const picked = [];
+    const picked = this.readyEvolutions().slice(0, count);
 
     while (picked.length < count && pool.length > 0) {
       const total = pool.reduce((sum, card) => sum + card.weight, 0);
@@ -237,9 +264,36 @@ export class UpgradeState {
     };
   }
 
+  evolutionCard(weapon, evolution) {
+    return {
+      id: `evolve:${weapon.id}`,
+      title: evolution.title,
+      text: evolution.description,
+      color: evolution.color,
+      icon: evolution.icon,
+      badge: 'эволюция',
+      highlight: true,
+      evolution: true,
+      preview: null,
+      weight: 0,
+      apply: () => this.arsenal.evolve(weapon, evolution),
+    };
+  }
+
+  /** Эволюция, которой этой пассивки не хватает до рецепта, или undefined. */
+  evolutionNeeding(passive) {
+    for (const weapon of this.arsenal.weapons) {
+      const evolution = this.evolutionOf(weapon.id);
+      if (evolution?.requires === passive.id) return evolution;
+    }
+    return undefined;
+  }
+
   passiveCard(passive) {
     const rank = this.rank(passive.id);
     const value = passive.get(this.player);
+    // Первый ранг пассивки, которой не хватает до эволюции, подсвечен её цветом.
+    const key = rank === 0 ? this.evolutionNeeding(passive) : undefined;
 
     return {
       id: `passive:${passive.id}`,
@@ -247,7 +301,8 @@ export class UpgradeState {
       text: passive.text,
       color: passive.color,
       icon: passive.icon,
-      badge: rank === 0 ? 'новое' : `ранг ${rank} → ${rank + 1}`,
+      badge: key ? 'ключ к эволюции' : rank === 0 ? 'новое' : `ранг ${rank} → ${rank + 1}`,
+      badgeColor: key?.color,
       preview: [passive.format(value), passive.format(passive.next(value))],
       weight: CARD_WEIGHT.passive,
       apply: () => {
@@ -259,7 +314,10 @@ export class UpgradeState {
 
   /** Короткая сводка для HUD: «Пушка 3 · Нож 1 · Магнит 2». */
   summary() {
-    const weapons = this.arsenal.weapons.map((w) => `${w.definition.title} ${w.level}`);
+    // У эволюции уровней нет — пишем только название.
+    const weapons = this.arsenal.weapons.map((w) =>
+      w.definition.evolvesFrom ? w.definition.title : `${w.definition.title} ${w.level}`,
+    );
     const passives = this.passives
       .filter((passive) => this.rank(passive.id) > 0)
       .map((passive) => `${passive.title} ${this.rank(passive.id)}`);

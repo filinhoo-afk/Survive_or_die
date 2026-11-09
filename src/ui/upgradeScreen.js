@@ -60,7 +60,8 @@ function drawCard(ctx, rect, card, index, hovered) {
   // Карточка под курсором приподнимается — сразу видно, что выберется.
   const y = rect.y - (hovered ? PIXEL : 0);
   const cx = rect.x + rect.width / 2;
-  const border = hovered ? card.color : COLORS.border;
+  // Эволюция выделена рамкой своего цвета даже без наведения.
+  const border = hovered || card.evolution ? card.color : COLORS.border;
 
   pixelPanel(ctx, rect.x, y, rect.width, rect.height, hovered ? COLORS.panelHover : COLORS.panel, border);
   if (hovered) {
@@ -85,11 +86,11 @@ function drawCard(ctx, rect, card, index, hovered) {
 
   drawLines(ctx, card.title, cx, y + 104, rect.width - 28, { scale: 2, color: COLORS.title });
 
-  // Новое — цветом карточки, прокачка уже взятого — приглушённо.
+  // Новое и эволюции — цветом карточки, прокачка уже взятого — приглушённо.
   drawText(ctx, card.badge, cx, y + 126, {
     scale: 2,
     align: 'center',
-    color: card.badge.startsWith('новое') ? card.color : COLORS.dim,
+    color: card.badgeColor ?? (card.highlight || card.badge.startsWith('новое') ? card.color : COLORS.dim),
   });
 
   const lines = wrapText(card.text, rect.width - 32, 2).slice(0, 4);

@@ -181,8 +181,16 @@ function openChoice() {
 
 function pickCard(index) {
   if (!offers || index < 0 || index >= offers.length) return;
-  offers[index].apply();
-  audio.play('pick');
+  const card = offers[index];
+  card.apply();
+  if (card.evolution) {
+    // Эволюция — событие забега: вспышка вокруг героя и встряска.
+    audio.play('levelUp');
+    effects.deathBurst(player.x, player.y, card.color, 2);
+    camera.addShake(CONFIG.shake.crit);
+  } else {
+    audio.play('pick');
+  }
   pendingLevels -= 1;
   offers = null;
   if (pendingLevels > 0) openChoice();
@@ -478,7 +486,7 @@ function update(dt) {
   // Щит и аура убивают без снарядов — кладут жертв в тот же список.
   const killed = [];
   const shotsBefore = projectiles.length;
-  arsenal.update(dt, { player, enemies, projectiles, killed });
+  arsenal.update(dt, { player, enemies, enemyShots, projectiles, killed });
   if (projectiles.length > shotsBefore) audio.play('shot');
   for (const shot of projectiles) shot.update(dt);
   blockShots(projectiles, obstacles);

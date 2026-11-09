@@ -45,6 +45,7 @@ export const aura = {
     if (!player.alive) return false;
 
     const reachLimit = stats.radius;
+    let touched = false;
     for (const enemy of enemies) {
       if (!enemy.alive) continue;
 
@@ -54,11 +55,15 @@ export const aura = {
       const distanceSquared = dx * dx + dy * dy;
       if (distanceSquared > reach * reach) continue;
 
+      touched = true;
       const distance = Math.sqrt(distanceSquared) || 1;
       if (enemy.takeHit(stats.damage, dx / distance, dy / distance, stats.knockback)) {
         killed.push(enemy);
       }
     }
+
+    // Святая земля лечит, только когда действительно кого-то жжёт.
+    if (touched && stats.heal) player.hp = Math.min(player.maxHp, player.hp + stats.heal);
 
     weapon.state.pulse = 1;
     return true;
@@ -66,18 +71,19 @@ export const aura = {
 
   draw(weapon, ctx, { player }, stats) {
     const { state } = weapon;
+    const color = weapon.definition.auraColor ?? CONFIG.colors.aura;
 
     ctx.save();
     ctx.beginPath();
     ctx.arc(player.x, player.y, stats.radius, 0, Math.PI * 2);
     // В момент импульса заливка ярче — видно ритм ударов.
     ctx.globalAlpha = 0.07 + state.pulse * 0.1;
-    ctx.fillStyle = CONFIG.colors.aura;
+    ctx.fillStyle = color;
     ctx.fill();
 
     ctx.globalAlpha = 0.3 + 0.15 * Math.sin(state.time * 5) + state.pulse * 0.3;
     ctx.lineWidth = 2;
-    ctx.strokeStyle = CONFIG.colors.aura;
+    ctx.strokeStyle = color;
     ctx.stroke();
     ctx.restore();
   },

@@ -42,15 +42,15 @@ export const orbit = {
     { text: 'Ещё два шара', show: 'count', apply: (s) => { s.count += 2; } },
   ],
 
-  createState: () => ({
+  createState: (definition) => ({
     angle: 0,
     time: 0,
-    animator: new Animator(atlas, 'orbit.ball'),
+    animator: new Animator(atlas, definition.ballClip ?? 'orbit.ball'),
     /** Враг → момент, когда его снова можно ударить. */
     nextHit: new WeakMap(),
   }),
 
-  tick(weapon, dt, { player, enemies, killed }, stats) {
+  tick(weapon, dt, { player, enemies, enemyShots, killed }, stats) {
     const { state } = weapon;
     state.time += dt;
     state.animator.update(dt);
@@ -58,6 +58,14 @@ export const orbit = {
     if (!player.alive) return;
 
     for (const orb of orbPositions(stats, state, player)) {
+      // Бастион гасит вражеские снаряды, которые влетели в шар.
+      if (stats.blocksShots && enemyShots) {
+        for (const shot of enemyShots) {
+          const reach = shot.radius + stats.orbSize;
+          if ((shot.x - orb.x) ** 2 + (shot.y - orb.y) ** 2 <= reach * reach) shot.spent = true;
+        }
+      }
+
       for (const enemy of enemies) {
         if (!enemy.alive || (state.nextHit.get(enemy) ?? 0) > state.time) continue;
 

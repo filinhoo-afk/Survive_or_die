@@ -13,6 +13,7 @@ const AREA_STATS = ['radius', 'orbSize'];
  * fire, tick и draw получают уже действующие характеристики —
  * с бонусами от пассивок игрока.
  *   createState — собственное изменяемое состояние экземпляра;
+ *                 получает определение: эволюции подменяют в нём спрайты;
  *   draw, layer — как и где рисовать само оружие: 'under' или 'over' врагов.
  *
  * Всё, кроме base и levels, необязательно.
@@ -28,7 +29,7 @@ export class Weapon {
     this.level = 1;
     this.stats = { ...definition.base };
     this.timer = 0;
-    this.state = definition.createState?.() ?? {};
+    this.state = definition.createState?.(definition) ?? {};
   }
 
   get maxLevel() {

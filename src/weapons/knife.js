@@ -35,7 +35,7 @@ export const knife = {
   ],
 
   // Нож бросается всегда, даже без врагов рядом: игрок целится сам.
-  fire(stats, { player, projectiles }) {
+  fire(stats, { player, projectiles }, weapon) {
     if (!player.alive) return false;
 
     const heading = Math.atan2(player.facing.y, player.facing.x);
@@ -45,6 +45,7 @@ export const knife = {
       projectiles.push(
         new Projectile(player.x, player.y, Math.cos(angle), Math.sin(angle), {
           kind: 'knife',
+          clip: weapon.definition.shotClip,
           radius: 6,
           damage: stats.damage,
           speed: stats.speed,

@@ -11,6 +11,7 @@ export class Projectile {
    * @param {object} options
    * @param {'orb'|'knife'} [options.kind] как рисовать
    * @param {number} [options.pierce] сколько врагов пробить, прежде чем исчезнуть
+   * @param {string} [options.clip] свой спрайт вместо стандартного для kind
    */
   constructor(x, y, directionX, directionY, options = {}) {
     const defaults = CONFIG.projectile;
@@ -18,7 +19,7 @@ export class Projectile {
     this.x = x;
     this.y = y;
     this.kind = options.kind ?? 'orb';
-    this.animator = new Animator(atlas, this.kind === 'knife' ? 'shot.knife' : 'shot.orb');
+    this.animator = new Animator(atlas, options.clip ?? (this.kind === 'knife' ? 'shot.knife' : 'shot.orb'));
     this.radius = options.radius ?? defaults.radius;
     this.damage = options.damage ?? defaults.damage;
     this.lifetime = options.lifetime ?? defaults.lifetime;

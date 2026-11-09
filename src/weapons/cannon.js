@@ -23,7 +23,7 @@ export const cannon = {
     { text: 'Снаряды пробивают одного врага', show: 'pierce', apply: (s) => { s.pierce += 1; } },
   ],
 
-  fire(stats, { player, enemies, projectiles }) {
+  fire(stats, { player, enemies, projectiles }, weapon) {
     if (!player.alive) return false;
 
     const targets = nearestEnemies(player, enemies, stats.range, stats.count);
@@ -41,6 +41,8 @@ export const cannon = {
           damage: stats.damage,
           speed: stats.speed,
           pierce: stats.pierce,
+          radius: stats.shotRadius,
+          clip: weapon.definition.shotClip,
         }),
       );
     }

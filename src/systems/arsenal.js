@@ -13,8 +13,11 @@ export class Arsenal {
     return this.weapons.length < this.maxWeapons;
   }
 
+  /** Есть ли оружие — само или уже как эволюция. */
   has(id) {
-    return this.weapons.some((weapon) => weapon.id === id);
+    return this.weapons.some(
+      (weapon) => weapon.id === id || weapon.definition.evolvesFrom === id,
+    );
   }
 
   add(id) {
@@ -22,6 +25,15 @@ export class Arsenal {
     const weapon = new Weapon(WEAPONS_BY_ID[id]);
     this.weapons.push(weapon);
     return weapon;
+  }
+
+  /** Заменяет оружие его эволюцией на том же месте в списке. */
+  evolve(weapon, definition) {
+    const index = this.weapons.indexOf(weapon);
+    if (index < 0) return null;
+    const evolved = new Weapon(definition);
+    this.weapons[index] = evolved;
+    return evolved;
   }
 
   update(dt, scene) {

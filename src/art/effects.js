@@ -4,6 +4,7 @@
  *   shot.orb / shot.enemy — шарики игрока и стрелка, по два кадра пульсации;
  *   shot.knife            — нож, нарисован остриём вправо, в полёте поворачивается;
  *   orbit.ball            — шар орбитального щита;
+ *   shot.thunder, shot.blade, orbit.bastion — золотые варианты для эволюций;
  *   gem.small / gem.big   — кристаллы опыта, по два кадра блика.
  *
  * Все клипы с привязкой по центру: x, y объекта — середина картинки.
@@ -119,6 +120,23 @@ export const EFFECT_CLIPS = {
   'shot.knife': {
     palette: { o: '#3b4a5c', w: '#ffffff', e: '#e6f1ff', h: '#8a5a34', d: '#5a3a1e' },
     frames: [KNIFE],
+    anchor: CENTER,
+  },
+  'shot.thunder': {
+    palette: { o: '#5a3d05', b: '#ffd65a', w: '#fffbe0' },
+    frames: [ORB_A, ORB_B],
+    fps: 14,
+    anchor: CENTER,
+  },
+  'shot.blade': {
+    palette: { o: '#5a3d05', w: '#fffbe0', e: '#ffd65a', h: '#8a5a34', d: '#5a3a1e' },
+    frames: [KNIFE],
+    anchor: CENTER,
+  },
+  'orbit.bastion': {
+    palette: { o: '#4a3505', m: '#f2c14e', d: '#b48a22', w: '#fff3c4' },
+    frames: [BALL_A, BALL_B],
+    fps: 6,
     anchor: CENTER,
   },
   'orbit.ball': {

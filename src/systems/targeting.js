@@ -1,12 +1,14 @@
 /**
  * До count ближайших живых врагов в радиусе, от ближнего к дальнему.
  * Сравниваем квадраты расстояний — без извлечения корней.
+ *
+ * @param {import('./grid.js').SpatialGrid} grid сетка врагов: смотрим только клетки в радиусе
  */
-export function nearestEnemies(from, enemies, maxRange, count) {
+export function nearestEnemies(from, grid, maxRange, count) {
   const limit = maxRange * maxRange;
   const inRange = [];
 
-  for (const enemy of enemies) {
+  for (const enemy of grid.query(from.x, from.y, maxRange)) {
     if (enemy.alive === false || enemy.underground) continue;
     const dx = enemy.x - from.x;
     const dy = enemy.y - from.y;

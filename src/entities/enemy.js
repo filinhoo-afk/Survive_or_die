@@ -215,14 +215,18 @@ export class Enemy {
  * Нахлёст делится по массам: лёгкий отлетает дальше, тяжёлый почти
  * не сдвигается. При равных массах — пополам, как раньше.
  *
- * Перебор пар по квадрату приемлем на десятках врагов; на сотнях
- * это место придётся переписать на пространственную сетку.
+ * Соседей берём из пространственной сетки: перебор всех пар рос по
+ * квадрату и на сотнях врагов съедал кадр. Каждую пару толкаем один раз —
+ * от врага с меньшим номером в списке.
+ *
+ * @param {import('../systems/grid.js').SpatialGrid} grid сетка, построенная по enemies
  */
-export function separate(enemies) {
-  for (let i = 0; i < enemies.length; i += 1) {
-    for (let j = i + 1; j < enemies.length; j += 1) {
-      const a = enemies[i];
-      const b = enemies[j];
+export function separate(enemies, grid) {
+  for (let i = 0; i < enemies.length; i += 1) enemies[i].separationOrder = i;
+
+  for (const a of enemies) {
+    for (const b of grid.query(a.x, a.y, a.radius)) {
+      if (b.separationOrder <= a.separationOrder) continue;
 
       const dx = b.x - a.x;
       const dy = b.y - a.y;

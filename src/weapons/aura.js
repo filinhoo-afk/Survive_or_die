@@ -41,12 +41,12 @@ export const aura = {
   },
 
   // Импульс идёт всегда, даже вокруг пусто: ритм ауры не должен сбиваться.
-  fire(stats, { player, enemies, killed }, weapon) {
+  fire(stats, { player, enemyGrid, killed }, weapon) {
     if (!player.alive) return false;
 
     const reachLimit = stats.radius;
     let touched = false;
-    for (const enemy of enemies) {
+    for (const enemy of enemyGrid.query(player.x, player.y, reachLimit)) {
       if (!enemy.alive) continue;
 
       const dx = enemy.x - player.x;

@@ -23,10 +23,10 @@ export const cannon = {
     { text: 'Снаряды пробивают одного врага', show: 'pierce', apply: (s) => { s.pierce += 1; } },
   ],
 
-  fire(stats, { player, enemies, projectiles }, weapon) {
+  fire(stats, { player, enemyGrid, projectiles }, weapon) {
     if (!player.alive) return false;
 
-    const targets = nearestEnemies(player, enemies, stats.range, stats.count);
+    const targets = nearestEnemies(player, enemyGrid, stats.range, stats.count);
     if (targets.length === 0) return false;
 
     // Целей меньше, чем снарядов, — лишние летят в тех же по кругу.

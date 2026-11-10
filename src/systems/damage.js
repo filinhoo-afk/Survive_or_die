@@ -4,10 +4,10 @@
  * Достаточно найти одно касание: после попадания включается неуязвимость,
  * и остальные враги в этом кадре всё равно не пройдут.
  */
-export function applyContactDamage(player, enemies) {
+export function applyContactDamage(player, grid) {
   if (!player.alive || player.invulnerableFor > 0) return null;
 
-  for (const enemy of enemies) {
+  for (const enemy of grid.query(player.x, player.y, player.radius)) {
     if (enemy.underground) continue;
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
@@ -45,15 +45,19 @@ export function resolveEnemyShotHits(shots, player) {
  * нож, за шаг физики смещается на 640 / 60 ≈ 11 пикселей, а зона
  * попадания не меньше 18.
  *
+ * Врагов-кандидатов для каждого снаряда даёт сетка: снарядов и врагов
+ * бывают сотни, и перебор «каждый с каждым» был самым дорогим местом кадра.
+ *
+ * @param {import('./grid.js').SpatialGrid} grid сетка врагов
  * @returns {Array} враги, убитые в этом кадре, — для эффектов смерти
  */
-export function resolveProjectileHits(projectiles, enemies) {
+export function resolveProjectileHits(projectiles, grid) {
   const killed = [];
 
   for (const shot of projectiles) {
     if (shot.expired) continue;
 
-    for (const enemy of enemies) {
+    for (const enemy of grid.query(shot.x, shot.y, shot.radius)) {
       if (!enemy.alive || enemy.underground || shot.hitEnemies.has(enemy)) continue;
 
       const dx = enemy.x - shot.x;

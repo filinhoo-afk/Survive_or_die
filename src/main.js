@@ -54,6 +54,7 @@ import { createBlizzard } from './gfx/blizzard.js';
 import { drawShadow, sortByDepth } from './gfx/shadows.js';
 import { blockShots, buildObstacles, collideBodies, collideBody } from './systems/obstacles.js';
 import { drawText, textHeight, wrapText } from './gfx/font.js';
+import { SpatialGrid } from './systems/grid.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -66,6 +67,9 @@ let location;
 let world;
 let groundImage;
 let obstacles;
+/** Сетки для столкновений: препятствия строятся раз на локацию, враги — каждый кадр. */
+let obstacleGrid;
+let enemyGrid;
 /** Метель локации или null, если погода ясная. */
 let blizzard;
 
@@ -75,6 +79,9 @@ function setLocation(next) {
   world = location.world;
   groundImage = bakeGround(atlas, location, CONFIG.ground.pixelScale);
   obstacles = buildObstacles(location);
+  // Препятствия не двигаются — запас на смещения им не нужен.
+  obstacleGrid = new SpatialGrid(world.width, world.height, 64, 0).rebuild(obstacles);
+  enemyGrid = new SpatialGrid(world.width, world.height);
   blizzard = location.blizzard ? createBlizzard(CONFIG.width, CONFIG.height, location.blizzard) : null;
 }
 
@@ -460,7 +467,7 @@ function update(dt) {
 
   elapsed += dt;
   player.update(dt, input, world, location.surface?.grip);
-  collideBody(player, obstacles);
+  collideBody(player, obstacleGrid);
 
   // Когда время локации вышло, выходит босс, а обычные волны прекращаются.
   if (location.boss && !boss && elapsed >= location.duration) spawnBoss();
@@ -471,12 +478,15 @@ function update(dt) {
   const hpBefore = player.hp;
   for (const enemy of [...enemies]) enemy.update(dt, player, enemyShots, enemies);
   if (boss?.slammed) camera.addShake(CONFIG.shake.playerHit);
-  separate(enemies);
-  collideBodies(enemies, obstacles);
-  applyContactDamage(player, enemies);
+  separate(enemies, enemyGrid.rebuild(enemies));
+  collideBodies(enemies, obstacleGrid);
+  // Расталкивание и препятствия сдвинули врагов — перекладываем к местам,
+  // где их будут искать касания, оружие и снаряды до конца кадра.
+  enemyGrid.rebuild(enemies);
+  applyContactDamage(player, enemyGrid);
 
   for (const shot of enemyShots) shot.update(dt);
-  blockShots(enemyShots, obstacles);
+  blockShots(enemyShots, obstacleGrid);
   resolveEnemyShotHits(enemyShots, player);
   if (player.hp < hpBefore) {
     audio.play(player.alive ? 'hit' : 'death');
@@ -486,11 +496,11 @@ function update(dt) {
   // Щит и аура убивают без снарядов — кладут жертв в тот же список.
   const killed = [];
   const shotsBefore = projectiles.length;
-  arsenal.update(dt, { player, enemies, enemyShots, projectiles, killed });
+  arsenal.update(dt, { player, enemies, enemyGrid, enemyShots, projectiles, killed });
   if (projectiles.length > shotsBefore) audio.play('shot');
   for (const shot of projectiles) shot.update(dt);
-  blockShots(projectiles, obstacles);
-  killed.push(...resolveProjectileHits(projectiles, enemies));
+  blockShots(projectiles, obstacleGrid);
+  killed.push(...resolveProjectileHits(projectiles, enemyGrid));
 
   // Ящики ломаются от снарядов; подобранный предмет срабатывает сразу,
   // а жертвы бомбы идут в общий список убитых.

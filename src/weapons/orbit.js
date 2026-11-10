@@ -50,7 +50,7 @@ export const orbit = {
     nextHit: new WeakMap(),
   }),
 
-  tick(weapon, dt, { player, enemies, enemyShots, killed }, stats) {
+  tick(weapon, dt, { player, enemyGrid, enemyShots, killed }, stats) {
     const { state } = weapon;
     state.time += dt;
     state.animator.update(dt);
@@ -66,7 +66,7 @@ export const orbit = {
         }
       }
 
-      for (const enemy of enemies) {
+      for (const enemy of enemyGrid.query(orb.x, orb.y, stats.orbSize)) {
         if (!enemy.alive || (state.nextHit.get(enemy) ?? 0) > state.time) continue;
 
         const dx = enemy.x - orb.x;

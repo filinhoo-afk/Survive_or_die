@@ -58,9 +58,16 @@ export function buildObstacles(location) {
   return result;
 }
 
-/** Выталкивает круг (игрока или врага) из всех препятствий. */
-export function collideBody(body, obstacles) {
-  for (const o of obstacles) {
+/**
+ * Выталкивает круг (игрока или врага) из препятствий рядом с ним.
+ *
+ * Препятствия неподвижны: сетку по ним строим один раз на локацию
+ * (SpatialGrid.rebuild), а не каждый кадр, как для врагов.
+ *
+ * @param {import('./grid.js').SpatialGrid} grid сетка препятствий
+ */
+export function collideBody(body, grid) {
+  for (const o of grid.query(body.x, body.y, body.radius)) {
     const dx = body.x - o.x;
     const dy = body.y - o.y;
     const min = o.radius + body.radius;
@@ -77,16 +84,16 @@ export function collideBody(body, obstacles) {
 }
 
 /** Призраки (type.ghost) проходят сквозь препятствия. */
-export function collideBodies(bodies, obstacles) {
+export function collideBodies(bodies, grid) {
   for (const body of bodies) {
-    if (!body.type?.ghost) collideBody(body, obstacles);
+    if (!body.type?.ghost) collideBody(body, grid);
   }
 }
 
 /** Снаряды гаснут о препятствия: из-за камня не постреляешь. */
-export function blockShots(shots, obstacles) {
+export function blockShots(shots, grid) {
   for (const shot of shots) {
-    for (const o of obstacles) {
+    for (const o of grid.query(shot.x, shot.y, shot.radius)) {
       const min = o.radius + shot.radius * 0.5;
       if ((shot.x - o.x) ** 2 + (shot.y - o.y) ** 2 < min * min) {
         shot.spent = true;

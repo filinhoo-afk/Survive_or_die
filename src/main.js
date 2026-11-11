@@ -17,7 +17,9 @@ import { Necromancer } from './entities/necromancer.js';
 import { IceWorm } from './entities/iceworm.js';
 import { AbyssLord } from './entities/abysslord.js';
 import { ENEMY_TYPES } from './enemies/types.js';
-import { Gem } from './entities/gem.js';
+import { gemPool, spawnGem } from './entities/gem.js';
+import { projectilePool } from './entities/projectile.js';
+import { enemyShotPool } from './entities/enemyShot.js';
 import { Chest } from './entities/chest.js';
 import { updateGems } from './systems/pickups.js';
 import {
@@ -55,6 +57,8 @@ import { drawShadow, sortByDepth } from './gfx/shadows.js';
 import { blockShots, buildObstacles, collideBodies, collideBody } from './systems/obstacles.js';
 import { drawText, textHeight, wrapText } from './gfx/font.js';
 import { SpatialGrid } from './systems/grid.js';
+import { profiler } from './systems/profiler.js';
+import { effectPool } from './systems/effects.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -122,14 +126,19 @@ function newRun() {
   camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
   enemies = [];
   boss = null;
-  projectiles = [];
-  enemyShots = [];
-  gems = [];
+  // Снаряды и кристаллы прошлого забега возвращаются в пул, а не выбрасываются.
+  if (projectiles) projectilePool.releaseAll(projectiles);
+  else projectiles = [];
+  if (enemyShots) enemyShotPool.releaseAll(enemyShots);
+  else enemyShots = [];
+  if (gems) gemPool.releaseAll(gems);
+  else gems = [];
   crates = buildCrates(world, obstacles);
   pickups = [];
   spawner = new Spawner(world, location.enemies);
   arsenal = new Arsenal();
   arsenal.add(HEROES[heroIndex].weapon);
+  effects?.clear();
   effects = new Effects();
   setHitListener((enemy, amount, crit) => {
     // В итоги идёт урон, который враг реально потерял, без перебора на добивании.
@@ -293,6 +302,12 @@ window.addEventListener('keydown', (event) => {
     audio.toggleMute();
     return;
   }
+  // F3 — профилировщик кадра; браузер на F3 открыл бы поиск по странице.
+  if (event.code === 'F3') {
+    event.preventDefault();
+    profiler.toggle();
+    return;
+  }
 
   if (transition.busy) return;
 
@@ -454,6 +469,7 @@ newRun();
 const menuHeroes = [new Animator(atlas, 'hero.idle.down'), new Animator(atlas, 'hero.walk.down')];
 
 function update(dt) {
+  profiler.begin('логика');
   transition.update(dt);
   if (mode === 'menu' || mode === 'shop') for (const hero of menuHeroes) hero.update(dt);
   // Метель идёт в меню и в живом забеге; пауза и выбор апгрейда замораживают её.
@@ -468,6 +484,7 @@ function update(dt) {
   elapsed += dt;
   player.update(dt, input, world, location.surface?.grip);
   collideBody(player, obstacleGrid);
+  profiler.lap('ИГРОК');
 
   // Когда время локации вышло, выходит босс, а обычные волны прекращаются.
   if (location.boss && !boss && elapsed >= location.duration) spawnBoss();
@@ -478,12 +495,14 @@ function update(dt) {
   const hpBefore = player.hp;
   for (const enemy of [...enemies]) enemy.update(dt, player, enemyShots, enemies);
   if (boss?.slammed) camera.addShake(CONFIG.shake.playerHit);
+  profiler.lap('ВРАГИ');
   separate(enemies, enemyGrid.rebuild(enemies));
   collideBodies(enemies, obstacleGrid);
   // Расталкивание и препятствия сдвинули врагов — перекладываем к местам,
   // где их будут искать касания, оружие и снаряды до конца кадра.
   enemyGrid.rebuild(enemies);
   applyContactDamage(player, enemyGrid);
+  profiler.lap('ТОЛПА');
 
   for (const shot of enemyShots) shot.update(dt);
   blockShots(enemyShots, obstacleGrid);
@@ -492,6 +511,7 @@ function update(dt) {
     audio.play(player.alive ? 'hit' : 'death');
     camera.addShake(player.alive ? CONFIG.shake.playerHit : CONFIG.shake.playerDeath);
   }
+  profiler.lap('ПУЛИ ВРАГОВ');
 
   // Щит и аура убивают без снарядов — кладут жертв в тот же список.
   const killed = [];
@@ -501,6 +521,7 @@ function update(dt) {
   for (const shot of projectiles) shot.update(dt);
   blockShots(projectiles, obstacleGrid);
   killed.push(...resolveProjectileHits(projectiles, enemyGrid));
+  profiler.lap('ОРУЖИЕ');
 
   // Ящики ломаются от снарядов; подобранный предмет срабатывает сразу,
   // а жертвы бомбы идут в общий список убитых.
@@ -509,7 +530,7 @@ function update(dt) {
     effects.deathBurst(crate.x, crate.y, '#9a6a36', 1);
     audio.play('kill');
     const loot = crateLoot();
-    if (loot === 'gem') gems.push(new Gem(crate.x, crate.y, 5));
+    if (loot === 'gem') gems.push(spawnGem(crate.x, crate.y, 5));
     else spawnPickup(pickups, crate.x, crate.y, loot);
   }
   removeBroken(crates);
@@ -519,6 +540,7 @@ function update(dt) {
     killed.push(...applyPickup(pickup, { player, gems, enemies, boss }));
     if (pickup.kind === 'bomb') camera.addShake(CONFIG.shake.playerHit);
   }
+  profiler.lap('ПРЕДМЕТЫ');
 
   kills += killed.length;
   for (const enemy of killed) killsByType[enemy.type.id] = (killsByType[enemy.type.id] ?? 0) + 1;
@@ -529,7 +551,7 @@ function update(dt) {
   for (const enemy of killed) {
     effects.corpse(enemy);
     effects.deathBurst(enemy.x, enemy.y, enemy.color, enemy.radius / 13);
-    gems.push(new Gem(enemy.x, enemy.y, enemy.xp));
+    gems.push(spawnGem(enemy.x, enemy.y, enemy.xp));
     const drop = enemy.modifier?.drop ? rollEliteDrop() : enemyDrop();
     if (drop) spawnPickup(pickups, enemy.x, enemy.y, drop);
   }
@@ -543,20 +565,22 @@ function update(dt) {
   }
   pendingLevels += levelsGained;
   if (pendingLevels > 0 && player.alive) openChoice();
+  profiler.lap('ДОБЫЧА');
 
   removeDead(enemies);
-  pruneProjectiles(projectiles, world);
-  pruneProjectiles(enemyShots, world);
+  pruneProjectiles(projectiles, world, projectilePool);
+  pruneProjectiles(enemyShots, world, enemyShotPool);
   effects.update(dt);
 
   camera.follow(player, dt);
+  profiler.lap('УБОРКА');
 
   if (!player.alive) {
     finishRun();
   } else if (boss && !boss.alive) {
     if (!chest) {
       // Босс пал: оставшиеся снаряды гаснут, на его месте появляется сундук.
-      enemyShots.length = 0;
+      enemyShotPool.releaseAll(enemyShots);
       boss.dismissMinions?.(enemies);
       audio.play('record');
       camera.addShake(CONFIG.shake.playerDeath);
@@ -579,6 +603,7 @@ function syncMusic() {
 }
 
 function render() {
+  profiler.begin('отрисовка');
   syncMusic();
   // Фон за пределами мира — чтобы край был виден, а не обрывался в пустоту.
   ctx.fillStyle = location.colors.outside;
@@ -589,6 +614,7 @@ function render() {
 
   drawWorld();
   drawShadows();
+  profiler.lap('ЗЕМЛЯ');
   chest?.draw(ctx);
   for (const pickup of pickups) pickup.draw(ctx);
   for (const gem of gems) gem.draw(ctx);
@@ -603,8 +629,10 @@ function render() {
   arsenal.draw(ctx, scene, 'over');
 
   ctx.restore();
+  profiler.lap('СПРАЙТЫ');
 
   drawLighting();
+  profiler.lap('СВЕТ');
 
   if (mode === 'menu') drawMenu();
   else if (mode === 'shop') {
@@ -615,6 +643,20 @@ function render() {
     if (mode === 'paused') drawPauseScreen(ctx, canvas);
   }
   transition.draw(ctx, canvas);
+  profiler.lap('ИНТЕРФЕЙС');
+  drawProfiler();
+  profiler.endFrame();
+}
+
+/** Панель F3: время по частям кадра и заполненность пулов. */
+function drawProfiler() {
+  if (!profiler.enabled) return;
+  profiler.draw(ctx, canvas, [
+    ['СНАРЯДЫ', projectilePool, projectiles.length],
+    ['ПУЛИ ВРАГОВ', enemyShotPool, enemyShots.length],
+    ['КРИСТАЛЛЫ', gemPool, gems.length],
+    ['ЭФФЕКТЫ', effectPool, effects.items.length],
+  ]);
 }
 
 /** Собирает источники света сцены и накладывает тьму поверх мира. */

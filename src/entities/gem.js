@@ -1,25 +1,34 @@
 import { CONFIG } from '../config.js';
 import { atlas } from '../art/index.js';
 import { Animator } from '../gfx/animator.js';
+import { Pool } from '../systems/pool.js';
 
 /**
  * Кристалл опыта. Лежит на месте смерти врага, пока игрок не подойдёт
  * на расстояние магнита, — дальше летит к нему с ускорением.
+ *
+ * Берётся из пула через spawnGem, собранный возвращается в updateGems.
  */
 export class Gem {
-  constructor(x, y, value) {
+  constructor(x = 0, y = 0, value = 1) {
+    this.animator = new Animator(atlas, 'gem.small');
+    this.reset(x, y, value);
+  }
+
+  reset(x, y, value) {
     this.x = x;
     this.y = y;
     this.value = value;
     /** Крупный кристалл от толстого врага — больше и другого цвета. */
     this.big = value >= 5;
-    this.animator = new Animator(atlas, this.big ? 'gem.big' : 'gem.small');
+    this.animator.play(this.big ? 'gem.big' : 'gem.small', true);
     this.radius = this.big ? CONFIG.gem.radius * 1.6 : CONFIG.gem.radius;
     this.pulled = false;
     this.speed = 0;
     this.collected = false;
     // Случайная фаза покачивания, чтобы россыпь не дышала в унисон.
     this.age = Math.random() * 10;
+    return this;
   }
 
   update(dt, player) {
@@ -56,4 +65,11 @@ export class Gem {
     this.animator.time = this.age;
     this.animator.draw(ctx, this.x, this.y + bob, { scale: 2 });
   }
+}
+
+export const gemPool = new Pool(() => new Gem());
+
+/** Кристалл из пула. */
+export function spawnGem(x, y, value) {
+  return gemPool.obtain().reset(x, y, value);
 }

@@ -1,4 +1,4 @@
-import { Projectile } from '../entities/projectile.js';
+import { spawnProjectile } from '../entities/projectile.js';
 
 /**
  * Метательный нож: летит туда, куда смотрит игрок, и пробивает насквозь.
@@ -43,7 +43,7 @@ export const knife = {
     for (let i = 0; i < stats.count; i += 1) {
       const angle = heading + (i - (stats.count - 1) / 2) * stats.spread;
       projectiles.push(
-        new Projectile(player.x, player.y, Math.cos(angle), Math.sin(angle), {
+        spawnProjectile(player.x, player.y, Math.cos(angle), Math.sin(angle), {
           kind: 'knife',
           clip: weapon.definition.shotClip,
           radius: 6,

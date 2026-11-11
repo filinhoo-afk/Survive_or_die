@@ -98,18 +98,13 @@ export class Weapon {
   }
 }
 
-/** Убирает отжившие снаряды и улетевшие за пределы мира. */
-export function pruneProjectiles(projectiles, world) {
-  for (let i = projectiles.length - 1; i >= 0; i -= 1) {
-    const shot = projectiles[i];
-    const outside =
-      shot.x < 0 || shot.x > world.width || shot.y < 0 || shot.y > world.height;
-
-    // Замена последним вместо splice: порядок снарядов не важен,
-    // а удаление из середины перестаёт двигать весь хвост массива.
-    if (shot.expired || outside) {
-      projectiles[i] = projectiles[projectiles.length - 1];
-      projectiles.pop();
-    }
-  }
+/**
+ * Убирает отжившие снаряды и улетевшие за пределы мира — обратно в пул.
+ * @param {import('./pool.js').Pool} pool откуда снаряды взяты
+ */
+export function pruneProjectiles(projectiles, world, pool) {
+  pool.sweep(
+    projectiles,
+    (shot) => shot.expired || shot.x < 0 || shot.x > world.width || shot.y < 0 || shot.y > world.height,
+  );
 }

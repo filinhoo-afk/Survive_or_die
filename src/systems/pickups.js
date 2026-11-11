@@ -1,5 +1,8 @@
+import { gemPool } from '../entities/gem.js';
+
 /**
- * Двигает кристаллы и собирает те, что долетели до игрока.
+ * Двигает кристаллы и собирает те, что долетели до игрока;
+ * собранные возвращаются в пул.
  * @returns {number} опыт, собранный в этом кадре
  */
 export function updateGems(gems, player, dt) {
@@ -13,6 +16,7 @@ export function updateGems(gems, player, dt) {
     xp += gem.value;
     gems[i] = gems[gems.length - 1];
     gems.pop();
+    gemPool.release(gem);
   }
 
   return xp;

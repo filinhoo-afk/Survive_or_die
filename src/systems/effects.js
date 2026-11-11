@@ -1,6 +1,14 @@
 import { CONFIG } from '../config.js';
 import { atlas } from '../art/index.js';
 import { Animator } from '../gfx/animator.js';
+import { Pool } from './pool.js';
+
+/**
+ * Записи эффектов общие для всех видов: вид задаёт, какие поля читаются.
+ * Отжившие возвращаются в пул — при массовых смертях это сотни частиц
+ * в секунду, и все они берутся из уже готовых объектов.
+ */
+export const effectPool = new Pool(() => ({ kind: '', x: 0, y: 0, age: 0, life: 1 }));
 
 /**
  * Короткоживущие визуальные эффекты, не влияющие на игру:
@@ -8,40 +16,50 @@ import { Animator } from '../gfx/animator.js';
  */
 export class Effects {
   constructor() {
+    /** @type {object[]} */
     this.items = [];
     /** Сколько цифр урона сейчас живёт — для потолка. */
+    this.damageTexts = 0;
+  }
+
+  /** Свежая запись из пула, уже в списке. */
+  add(kind, x, y, life) {
+    const item = effectPool.obtain();
+    item.kind = kind;
+    item.x = x;
+    item.y = y;
+    item.age = 0;
+    item.life = life;
+    this.items.push(item);
+    return item;
+  }
+
+  /** Все эффекты — обратно в пул: новый забег начинается с чистого экрана. */
+  clear() {
+    effectPool.releaseAll(this.items);
     this.damageTexts = 0;
   }
 
   /** @param {number} [scale] размер вспышки относительно обычного врага */
   deathBurst(x, y, color, scale = 1) {
     this.spawnParticles(x, y, color, scale);
-    this.items.push({
-      kind: 'burst',
-      x,
-      y,
-      color,
-      age: 0,
-      life: CONFIG.effects.deathLife * Math.sqrt(scale),
-      radius: CONFIG.effects.deathRadius * scale,
-    });
+    const item = this.add('burst', x, y, CONFIG.effects.deathLife * Math.sqrt(scale));
+    item.color = color;
+    item.radius = CONFIG.effects.deathRadius * scale;
   }
 
   /** Тело убитого врага: проигрывает свой клип смерти и исчезает. */
   corpse(enemy) {
-    const animator = new Animator(atlas, `${enemy.type.id}.death`);
-    const { fps, rects } = animator.clip;
-    this.items.push({
-      kind: 'corpse',
-      x: enemy.x,
-      y: enemy.y,
-      animator,
-      scale: enemy.spriteScale,
-      flipX: enemy.facingLeft,
-      age: 0,
-      // Последний кадр держится ещё одну долю цикла и тает.
-      life: (rects.length + 0.5) / fps,
-    });
+    const item = this.add('corpse', enemy.x, enemy.y, 0);
+    // Проигрыватель остаётся у записи и в пуле — второй раз его не создаём.
+    const clip = `${enemy.type.id}.death`;
+    if (item.animator) item.animator.play(clip, true);
+    else item.animator = new Animator(atlas, clip);
+    const { fps, rects } = item.animator.clip;
+    // Последний кадр держится ещё одну долю цикла и тает.
+    item.life = (rects.length + 0.5) / fps;
+    item.scale = enemy.spriteScale;
+    item.flipX = enemy.facingLeft;
   }
 
   /** Осколки разлетаются во все стороны и тормозят о воздух. */
@@ -52,41 +70,23 @@ export class Effects {
     for (let i = 0; i < count; i += 1) {
       const angle = Math.random() * Math.PI * 2;
       const speed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
-      this.items.push({
-        kind: 'particle',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color,
-        age: 0,
-        life: cfg.lifeMin + Math.random() * (cfg.lifeMax - cfg.lifeMin),
-        size: cfg.size * (0.6 + Math.random() * 0.8),
-      });
+      const item = this.add('particle', x, y, cfg.lifeMin + Math.random() * (cfg.lifeMax - cfg.lifeMin));
+      item.vx = Math.cos(angle) * speed;
+      item.vy = Math.sin(angle) * speed;
+      item.color = color;
+      item.size = cfg.size * (0.6 + Math.random() * 0.8);
     }
   }
 
   /** Волна от игрока и надпись с новым уровнем. */
   levelUp(x, y, level) {
     const life = CONFIG.effects.levelUpLife;
-    this.items.push({
-      kind: 'ring',
-      x,
-      y,
-      color: CONFIG.colors.levelUp,
-      age: 0,
-      life,
-      radius: CONFIG.effects.levelUpRadius,
-    });
-    this.items.push({
-      kind: 'text',
-      x,
-      y: y - 30,
-      text: `Уровень ${level}`,
-      color: CONFIG.colors.levelUp,
-      age: 0,
-      life: life * 1.6,
-    });
+    const ring = this.add('ring', x, y, life);
+    ring.color = CONFIG.colors.levelUp;
+    ring.radius = CONFIG.effects.levelUpRadius;
+    const text = this.add('text', x, y - 30, life * 1.6);
+    text.text = `Уровень ${level}`;
+    text.color = CONFIG.colors.levelUp;
   }
 
   /** Цифра урона над врагом; крит — крупнее и золотая. */
@@ -94,16 +94,10 @@ export class Effects {
     const cfg = CONFIG.effects.damageText;
     if (this.damageTexts >= cfg.max) return;
     this.damageTexts += 1;
-    this.items.push({
-      kind: 'damage',
-      x: x + (Math.random() - 0.5) * 14,
-      y: y - 12,
-      text: crit ? `${amount}!` : String(amount),
-      color: crit ? CONFIG.colors.critText : CONFIG.colors.damageText,
-      size: crit ? 22 : 14,
-      age: 0,
-      life: cfg.life * (crit ? 1.3 : 1),
-    });
+    const item = this.add('damage', x + (Math.random() - 0.5) * 14, y - 12, cfg.life * (crit ? 1.3 : 1));
+    item.text = crit ? `${amount}!` : String(amount);
+    item.color = crit ? CONFIG.colors.critText : CONFIG.colors.damageText;
+    item.size = crit ? 22 : 14;
   }
 
   update(dt) {
@@ -122,6 +116,7 @@ export class Effects {
       if (item.kind === 'damage') this.damageTexts -= 1;
       this.items[i] = this.items[this.items.length - 1];
       this.items.pop();
+      effectPool.release(item);
     }
   }
 

@@ -1,6 +1,6 @@
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
-import { EnemyShot } from './enemyShot.js';
+import { spawnEnemyShot } from './enemyShot.js';
 
 /**
  * Фазы Некроманта; вторая включается ниже `until` доли здоровья.
@@ -192,7 +192,7 @@ export class Necromancer extends Enemy {
         const dirX = Math.cos(a);
         const dirY = Math.sin(a);
         shots.push(
-          new EnemyShot(this.x + dirX * this.radius, this.y + dirY * this.radius, dirX, dirY, phase.shot),
+          spawnEnemyShot(this.x + dirX * this.radius, this.y + dirY * this.radius, dirX, dirY, phase.shot),
         );
       }
     }

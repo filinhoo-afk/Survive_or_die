@@ -1,4 +1,4 @@
-import { Projectile } from '../entities/projectile.js';
+import { spawnProjectile } from '../entities/projectile.js';
 import { nearestEnemies } from '../systems/targeting.js';
 
 /** Автопушка: сама бьёт по ближайшим врагам в радиусе. */
@@ -37,7 +37,7 @@ export const cannon = {
       const distance = Math.hypot(dx, dy) || 1;
 
       projectiles.push(
-        new Projectile(player.x, player.y, dx / distance, dy / distance, {
+        spawnProjectile(player.x, player.y, dx / distance, dy / distance, {
           damage: stats.damage,
           speed: stats.speed,
           pierce: stats.pierce,

@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
-import { EnemyShot } from './enemyShot.js';
+import { spawnEnemyShot } from './enemyShot.js';
 import { atlas } from '../art/index.js';
 import { Animator } from '../gfx/animator.js';
 import { ELITE } from '../enemies/elites.js';
@@ -129,7 +129,7 @@ export class Enemy {
         this.aimLeft = 0;
         this.shotCooldown = ranged.cooldown;
         shots?.push(
-          new EnemyShot(this.x + nx * this.radius, this.y + ny * this.radius, nx, ny, {
+          spawnEnemyShot(this.x + nx * this.radius, this.y + ny * this.radius, nx, ny, {
             damage: ranged.damage,
             speed: ranged.speed,
           }),

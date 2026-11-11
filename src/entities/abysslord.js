@@ -1,6 +1,6 @@
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
-import { EnemyShot } from './enemyShot.js';
+import { spawnEnemyShot } from './enemyShot.js';
 
 /**
  * Три фазы Владыки; следующая включается, когда доля здоровья упала до `until`.
@@ -197,7 +197,7 @@ export class AbyssLord extends Enemy {
       const dirX = Math.cos(angle);
       const dirY = Math.sin(angle);
       shots.push(
-        new EnemyShot(this.x + dirX * this.radius, this.y + dirY * this.radius, dirX, dirY, phase.shot),
+        spawnEnemyShot(this.x + dirX * this.radius, this.y + dirY * this.radius, dirX, dirY, phase.shot),
       );
     };
 

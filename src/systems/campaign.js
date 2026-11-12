@@ -2,30 +2,20 @@
  * Прогресс кампании: какие локации пройдены (побеждён их босс).
  *
  * Локации идут по порядку: следующая открывается, когда пройдена
- * предыдущая. Первая открыта всегда. Хранилище бывает недоступно,
- * поэтому любая ошибка localStorage превращается в «ничего не пройдено».
+ * предыдущая. Первая открыта всегда. Хранит единое сохранение (save.js).
  */
 
-const STORAGE_KEY = 'survive-or-die:campaign';
+import { patchSave, readSave } from './save.js';
 
 export function loadCleared() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (Array.isArray(saved)) return new Set(saved.filter((id) => typeof id === 'string'));
-  } catch {
-    // Испорченная запись или нет доступа — кампания с нуля.
-  }
-  return new Set();
+  const saved = readSave().cleared;
+  return new Set(Array.isArray(saved) ? saved.filter((id) => typeof id === 'string') : []);
 }
 
 /** Запоминает пройденную локацию и возвращает обновлённое множество. */
 export function markCleared(cleared, id) {
   const next = new Set(cleared).add(id);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
-  } catch {
-    // Не сохранилось — прогресс проживёт до перезагрузки страницы.
-  }
+  patchSave({ cleared: [...next] });
   return next;
 }
 

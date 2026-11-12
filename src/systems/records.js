@@ -7,7 +7,7 @@
  * localStorage молча превращается в «рекорда пока нет».
  */
 
-const STORAGE_KEY = 'survive-or-die:record';
+import { patchSave, readSave } from './save.js';
 
 /** Показатели, по которым ведётся рекорд, в порядке вывода на экран итогов. */
 export const RECORD_FIELDS = ['time', 'kills', 'level', 'damage'];
@@ -18,25 +18,17 @@ function emptyRecord() {
 
 export function loadRecord() {
   const record = emptyRecord();
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved && typeof saved === 'object') {
-      for (const key of Object.keys(record)) {
-        if (Number.isFinite(saved[key]) && saved[key] > 0) record[key] = saved[key];
-      }
+  const saved = readSave().record;
+  if (saved && typeof saved === 'object') {
+    for (const key of Object.keys(record)) {
+      if (Number.isFinite(saved[key]) && saved[key] > 0) record[key] = saved[key];
     }
-  } catch {
-    // Испорченная запись или нет доступа — начинаем с нуля.
   }
   return record;
 }
 
 function saveRecord(record) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
-  } catch {
-    // Не сохранилось — рекорд проживёт до перезагрузки страницы.
-  }
+  patchSave({ record });
 }
 
 /**

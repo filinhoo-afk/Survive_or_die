@@ -1,10 +1,9 @@
 /**
  * Мета-прокачка: золото, которое копится между забегами, и постоянные
- * улучшения, купленные за него. Хранилище бывает недоступно, поэтому любая
- * ошибка localStorage превращается в «золота нет, ничего не куплено».
+ * улучшения, купленные за него. Хранит единое сохранение (save.js).
  */
 
-const STORAGE_KEY = 'survive-or-die:meta';
+import { patchSave, readSave } from './save.js';
 
 /** Постоянные улучшения: уровень * step даёт бонус, цена растёт с уровнем. */
 export const META_UPGRADES = [
@@ -21,27 +20,19 @@ function emptyMeta() {
 
 export function loadMeta() {
   const meta = emptyMeta();
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved && typeof saved === 'object') {
-      if (Number.isFinite(saved.gold) && saved.gold > 0) meta.gold = Math.floor(saved.gold);
-      for (const upgrade of META_UPGRADES) {
-        const level = saved.levels?.[upgrade.id];
-        if (Number.isInteger(level) && level > 0) meta.levels[upgrade.id] = Math.min(level, upgrade.max);
-      }
+  const saved = readSave().meta;
+  if (saved && typeof saved === 'object') {
+    if (Number.isFinite(saved.gold) && saved.gold > 0) meta.gold = Math.floor(saved.gold);
+    for (const upgrade of META_UPGRADES) {
+      const level = saved.levels?.[upgrade.id];
+      if (Number.isInteger(level) && level > 0) meta.levels[upgrade.id] = Math.min(level, upgrade.max);
     }
-  } catch {
-    // Испорченная запись или нет доступа — начинаем с нуля.
   }
   return meta;
 }
 
 function saveMeta(meta) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(meta));
-  } catch {
-    // Не сохранилось — прогресс проживёт до перезагрузки страницы.
-  }
+  patchSave({ meta });
 }
 
 export function levelOf(meta, id) {

@@ -1,9 +1,9 @@
 /**
  * Персонажи: у каждого своё стартовое оружие и небольшой уклон в характеристиках.
- * Выбор запоминается в localStorage; любая ошибка хранилища — берём первого.
+ * Выбор запоминается в единой записи сохранения (save.js); нет записи — первый.
  */
 
-const STORAGE_KEY = 'survive-or-die:hero';
+import { patchSave, readSave } from './save.js';
 
 export const HEROES = [
   { id: 'gunner', title: 'Стрелок', weapon: 'cannon', desc: 'Пушка · без изъянов', color: '#ffd65a' },
@@ -32,20 +32,12 @@ export const HEROES = [
 ];
 
 export function loadHeroIndex() {
-  try {
-    const index = HEROES.findIndex((h) => h.id === localStorage.getItem(STORAGE_KEY));
-    return index >= 0 ? index : 0;
-  } catch {
-    return 0;
-  }
+  const index = HEROES.findIndex((h) => h.id === readSave().hero);
+  return index >= 0 ? index : 0;
 }
 
 export function saveHeroIndex(index) {
-  try {
-    localStorage.setItem(STORAGE_KEY, HEROES[index].id);
-  } catch {
-    // Не сохранилось — выбор проживёт до перезагрузки.
-  }
+  patchSave({ hero: HEROES[index].id });
 }
 
 /** Применяет черты героя к свежему игроку (до мета-бонусов, которые лечат до максимума). */

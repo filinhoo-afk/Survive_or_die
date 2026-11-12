@@ -57,6 +57,7 @@ import { drawShadow, sortByDepth } from './gfx/shadows.js';
 import { blockShots, buildObstacles, collideBodies, collideBody } from './systems/obstacles.js';
 import { drawText, textHeight, wrapText } from './gfx/font.js';
 import { SpatialGrid } from './systems/grid.js';
+import { patchSave, readSave } from './systems/save.js';
 import { profiler } from './systems/profiler.js';
 import { effectPool } from './systems/effects.js';
 
@@ -87,9 +88,16 @@ function setLocation(next) {
   obstacleGrid = new SpatialGrid(world.width, world.height, 64, 0).rebuild(obstacles);
   enemyGrid = new SpatialGrid(world.width, world.height);
   blizzard = location.blizzard ? createBlizzard(CONFIG.width, CONFIG.height, location.blizzard) : null;
+  patchSave({ location: location.id });
 }
 
-setLocation(DEFAULT_LOCATION);
+/** Последняя выбранная локация из сохранения, если она всё ещё открыта. */
+function savedLocation() {
+  const index = LOCATION_LIST.findIndex((l) => l.id === readSave().location);
+  return index >= 0 && isUnlocked(LOCATION_LIST, index, loadCleared()) ? LOCATION_LIST[index] : DEFAULT_LOCATION;
+}
+
+setLocation(savedLocation());
 const lighting = createLighting(canvas.width, canvas.height, CONFIG.lighting);
 const input = createInput();
 

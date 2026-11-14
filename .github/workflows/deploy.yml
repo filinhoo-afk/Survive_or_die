@@ -1,0 +1,41 @@
+# Выкладывает игру на GitHub Pages при каждом пуше в main.
+# Сборки нет: на сайт уходят только файлы, нужные браузеру.
+name: Деплой на GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Минимум прав: читать код, публиковать Pages, подписать деплой.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Два деплоя подряд идут по очереди; начатый не обрывается на полпути.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Собрать папку сайта
+        run: |
+          mkdir _site
+          cp index.html _site/
+          cp -r css src _site/
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

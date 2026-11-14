@@ -60,10 +60,20 @@ function drawCampaignMap(ctx, canvas, y, campaign) {
   });
 }
 
+/** Подпись состояния связи с бэкендом рекордов (ключи — ONLINE из online/backend.js). */
+const ONLINE_LABELS = {
+  off: { text: 'онлайн: не настроен', color: C.dim },
+  checking: { text: 'онлайн: проверка...', color: C.dim },
+  ok: { text: 'онлайн: подключено', color: C.accent },
+  error: { text: 'онлайн: нет связи', color: C.danger },
+};
+
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
-export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null) {
+export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off') {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
+  const link = ONLINE_LABELS[online] ?? ONLINE_LABELS.off;
+  drawText(ctx, link.text, 16, 16, { scale: 2, color: link.color });
   const { list, selected, cleared } = campaign;
   const location = list[selected];
   const open = selected === 0 || cleared.has(list[selected - 1].id);

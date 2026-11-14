@@ -62,6 +62,7 @@ import { profiler } from './systems/profiler.js';
 import { VOLUME_STEPS, defaultSettings, loadSettings, rebind, saveSettings } from './systems/settings.js';
 import { SETTINGS_ROWS, drawSettingsScreen, settingsBarValue, settingsRowAt } from './ui/settingsScreen.js';
 import { effectPool } from './systems/effects.js';
+import { ONLINE, createBackend } from './online/backend.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -588,6 +589,13 @@ function openChest() {
 /** Лучшие показатели — для главного меню. */
 let record = loadRecord();
 
+/** Бэкенд рекордов: при запуске один раз проверяем связь — итог виден в меню. */
+const backend = createBackend();
+let online = backend.configured ? ONLINE.checking : ONLINE.off;
+backend.check().then((state) => {
+  online = state;
+});
+
 /** Фиксирует итоги забега и обновляет рекорд; victory — босс повержен. */
 function finishRun(victory = false) {
   const stats = {
@@ -1008,7 +1016,7 @@ function drawMenu() {
     list: LOCATION_LIST,
     selected: LOCATION_LIST.indexOf(location),
     cleared,
-  }, meta.gold, HEROES[heroIndex]);
+  }, meta.gold, HEROES[heroIndex], online);
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

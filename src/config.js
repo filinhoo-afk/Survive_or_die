@@ -177,4 +177,15 @@ export const CONFIG = {
     /** Размер пикселя земли — как у спрайтов, чтобы пиксели были одного размера. */
     pixelScale: 3,
   },
+  /**
+   * Бэкенд рекордов (Supabase). Ключ публичный (publishable / anon): он и так
+   * виден в браузере, данные защищают правила доступа в базе. Секретный ключ
+   * (secret / service_role) сюда класть нельзя. Пустые значения — игра офлайн.
+   */
+  online: {
+    url: 'https://tsjlqbcqxvbtguamuslx.supabase.co',
+    key: 'sb_publishable_GFwweJhyPE_27l_RfthbRw__p_62TRo',
+    /** Сколько миллисекунд ждать ответа, прежде чем считать, что связи нет. */
+    timeout: 6000,
+  },
 };

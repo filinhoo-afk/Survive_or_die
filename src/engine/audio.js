@@ -26,6 +26,9 @@ let sfxGain = null;
 let noiseBuffer = null;
 
 let muted = false;
+/** Множители громкости из настроек (0..1) и текущий «приглушённый» уровень музыки. */
+let volumes = { master: 1, music: 1, sfx: 1 };
+let musicLevel = 1;
 let musicOn = false;
 let nextStep = 0;
 let stepIndex = 0;
@@ -43,15 +46,15 @@ export function unlock() {
 
     ctx = new AudioContextClass();
     master = ctx.createGain();
-    master.gain.value = muted ? 0 : MASTER_VOLUME;
+    master.gain.value = muted ? 0 : MASTER_VOLUME * volumes.master;
     master.connect(ctx.destination);
 
     musicGain = ctx.createGain();
-    musicGain.gain.value = MUSIC_VOLUME;
+    musicGain.gain.value = MUSIC_VOLUME * volumes.music * musicLevel;
     musicGain.connect(master);
 
     sfxGain = ctx.createGain();
-    sfxGain.gain.value = SFX_VOLUME;
+    sfxGain.gain.value = SFX_VOLUME * volumes.sfx;
     sfxGain.connect(master);
 
     noiseBuffer = makeNoise();
@@ -207,13 +210,23 @@ export function stopMusic() {
 
 /** Приглушает музыку — на паузе и в меню — вместо полной остановки. */
 export function setMusicLevel(level) {
+  musicLevel = level;
   if (!ctx) return;
-  musicGain.gain.setTargetAtTime(MUSIC_VOLUME * level, ctx.currentTime, 0.1);
+  musicGain.gain.setTargetAtTime(MUSIC_VOLUME * volumes.music * level, ctx.currentTime, 0.1);
+}
+
+/** Громкость из настроек: общая, музыка и эффекты, каждая от 0 до 1. */
+export function setVolumes(next) {
+  volumes = { ...volumes, ...next };
+  if (!ctx) return;
+  master.gain.setTargetAtTime(muted ? 0 : MASTER_VOLUME * volumes.master, ctx.currentTime, 0.02);
+  musicGain.gain.setTargetAtTime(MUSIC_VOLUME * volumes.music * musicLevel, ctx.currentTime, 0.02);
+  sfxGain.gain.setTargetAtTime(SFX_VOLUME * volumes.sfx, ctx.currentTime, 0.02);
 }
 
 export function toggleMute() {
   muted = !muted;
-  if (ctx) master.gain.setTargetAtTime(muted ? 0 : MASTER_VOLUME, ctx.currentTime, 0.02);
+  if (ctx) master.gain.setTargetAtTime(muted ? 0 : MASTER_VOLUME * volumes.master, ctx.currentTime, 0.02);
   return muted;
 }
 

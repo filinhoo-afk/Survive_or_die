@@ -59,6 +59,8 @@ import { drawText, textHeight, wrapText } from './gfx/font.js';
 import { SpatialGrid } from './systems/grid.js';
 import { patchSave, readSave } from './systems/save.js';
 import { profiler } from './systems/profiler.js';
+import { VOLUME_STEPS, defaultSettings, loadSettings, rebind, saveSettings } from './systems/settings.js';
+import { SETTINGS_ROWS, drawSettingsScreen, settingsBarValue, settingsRowAt } from './ui/settingsScreen.js';
 import { effectPool } from './systems/effects.js';
 
 const canvas = document.getElementById('game');
@@ -99,7 +101,106 @@ function savedLocation() {
 
 setLocation(savedLocation());
 const lighting = createLighting(canvas.width, canvas.height, CONFIG.lighting);
-const input = createInput();
+let settings = loadSettings();
+const input = createInput(window, settings.bindings);
+
+/** Применяет настройки: громкость и клавиши вступают в силу сразу и сохраняются. */
+function applySettings(next) {
+  settings = next;
+  audio.setVolumes(settings);
+  input.setBindings(settings.bindings);
+  saveSettings(settings);
+}
+audio.setVolumes(settings);
+
+/** Экран настроек: выбранная строка, ожидаемое действие при переназначении и куда вернуться. */
+let settingsSelected = 0;
+let rebinding = null;
+let settingsReturn = 'menu';
+let settingsNotice = '';
+
+function openSettings() {
+  settingsReturn = mode === 'paused' ? 'paused' : 'menu';
+  settingsSelected = 0;
+  rebinding = null;
+  settingsNotice = '';
+  mode = 'settings';
+  audio.play('pick');
+}
+
+function closeSettings() {
+  rebinding = null;
+  settingsNotice = '';
+  mode = settingsReturn;
+}
+
+/** Сдвиг громкости на шаг; на строках не про громкость ничего не делает. */
+function nudgeVolume(row, direction) {
+  const channel = SETTINGS_ROWS[row];
+  if (channel?.kind !== 'volume') return;
+  setVolume(channel.id, settings[channel.id] + direction / VOLUME_STEPS);
+}
+
+function setVolume(id, value) {
+  const next = Math.min(1, Math.max(0, Math.round(value * VOLUME_STEPS) / VOLUME_STEPS));
+  if (next === settings[id]) return;
+  applySettings({ ...settings, [id]: next });
+  audio.play('gem');
+}
+
+/** Выбор строки: клавиша — ждём нажатие, сброс — умолчания. */
+function activateSetting(row) {
+  const item = SETTINGS_ROWS[row];
+  if (item.kind === 'key') {
+    rebinding = item.id;
+    settingsNotice = '';
+  } else if (item.kind === 'reset') {
+    applySettings(defaultSettings());
+    audio.play('pick');
+  }
+}
+
+/** Ждём клавишу для действия: Esc отменяет, занятые игрой клавиши отклоняем. */
+function captureBinding(code) {
+  if (code === 'Escape') {
+    rebinding = null;
+    settingsNotice = '';
+    return;
+  }
+  const next = rebind(settings, rebinding, code);
+  if (!next) {
+    settingsNotice = 'Эта клавиша занята игрой';
+    audio.play('hit');
+    return;
+  }
+  applySettings(next);
+  rebinding = null;
+  settingsNotice = '';
+  audio.play('pick');
+}
+
+/** Геймпад листает меню как клавиатура: кнопки превращаются в коды клавиш. */
+const PAD_MENU_KEYS = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', a: 'Enter', b: 'Escape', lb: 'KeyO' };
+const PAD_CARD_KEYS = { a: 'Digit1', b: 'Digit2', x: 'Digit3' };
+
+function padKey(button) {
+  if (mode === 'playing' && !summary && !offers) return button === 'start' ? 'Escape' : null;
+  if (offers) return PAD_CARD_KEYS[button] ?? null;
+  if (button === 'start') return mode === 'paused' ? 'Escape' : mode === 'menu' ? 'Enter' : null;
+  if (button === 'x') return mode === 'paused' ? 'KeyM' : mode === 'menu' || mode === 'shop' ? 'KeyB' : null;
+  if (button === 'y') return mode === 'paused' || summary ? 'KeyR' : null;
+  // Пока ждём клавишу для переназначения, геймпад только отменяет.
+  if (rebinding) return button === 'b' ? 'Escape' : null;
+  if (button === 'lb' && mode !== 'menu' && mode !== 'paused') return null;
+  return PAD_MENU_KEYS[button] ?? null;
+}
+
+function pollGamepad() {
+  for (const button of input.gamepad.justPressed()) {
+    const code = padKey(button);
+    if (code) onKey({ code, repeat: false, preventDefault() {} });
+  }
+}
 
 let player;
 let camera;
@@ -300,12 +401,17 @@ function setMode(next) {
   mode = next;
 }
 
-window.addEventListener('keydown', (event) => {
+function onKey(event) {
   if (event.repeat) return;
 
   // Браузер включает звук только после жеста игрока — первое нажатие и есть он.
   audio.unlock();
   audio.startMusic();
+  if (mode === 'settings' && rebinding) {
+    event.preventDefault?.();
+    captureBinding(event.code);
+    return;
+  }
   if (event.code === 'KeyN') {
     audio.toggleMute();
     return;
@@ -319,6 +425,17 @@ window.addEventListener('keydown', (event) => {
 
   if (transition.busy) return;
 
+  if (mode === 'settings') {
+    const up = event.code === 'KeyW' || event.code === 'ArrowUp';
+    const down = event.code === 'KeyS' || event.code === 'ArrowDown';
+    if (event.code === 'Escape' || event.code === 'KeyO') closeSettings();
+    else if (up) settingsSelected = (settingsSelected + SETTINGS_ROWS.length - 1) % SETTINGS_ROWS.length;
+    else if (down) settingsSelected = (settingsSelected + 1) % SETTINGS_ROWS.length;
+    else if (event.code in MENU_SHIFT) nudgeVolume(settingsSelected, MENU_SHIFT[event.code]);
+    else if (event.code === 'Enter' || event.code === 'Space') activateSetting(settingsSelected);
+    return;
+  }
+
   if (mode === 'shop') {
     if (event.code === 'Escape' || event.code === 'KeyB') mode = 'menu';
     else if (event.code === 'KeyW' || event.code === 'ArrowUp') {
@@ -331,6 +448,7 @@ window.addEventListener('keydown', (event) => {
 
   if (mode === 'menu') {
     if (event.code === 'KeyB') mode = 'shop';
+    else if (event.code === 'KeyO') openSettings();
     else if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
     else if (event.code === 'KeyW' || event.code === 'ArrowUp') shiftHero(-1);
@@ -355,12 +473,16 @@ window.addEventListener('keydown', (event) => {
 
   if (event.code === 'Escape' || event.code === 'KeyP') {
     setMode(mode === 'paused' ? 'playing' : 'paused');
+  } else if (mode === 'paused' && event.code === 'KeyO') {
+    openSettings();
   } else if (mode === 'paused' && event.code === 'KeyR') {
     startRunFaded();
   } else if (mode === 'paused' && event.code === 'KeyM') {
     menuFaded();
   }
-});
+}
+
+window.addEventListener('keydown', onKey);
 
 // Пауза сама включается, когда вкладка теряет фокус.
 window.addEventListener('blur', () => {
@@ -377,6 +499,12 @@ function canvasPoint(event) {
 }
 
 canvas.addEventListener('mousemove', (event) => {
+  if (mode === 'settings') {
+    const row = settingsRowAt(canvasPoint(event).x, canvasPoint(event).y, canvas);
+    if (row >= 0 && !rebinding) settingsSelected = row;
+    canvas.style.cursor = row >= 0 ? 'pointer' : 'default';
+    return;
+  }
   if (mode === 'shop') {
     const { x, y } = canvasPoint(event);
     const row = shopRowAt(x, y, canvas);
@@ -394,6 +522,18 @@ canvas.addEventListener('click', (event) => {
   audio.unlock();
   audio.startMusic();
   if (transition.busy) return;
+  if (mode === 'settings') {
+    const { x, y } = canvasPoint(event);
+    const row = settingsRowAt(x, y, canvas);
+    if (rebinding || row < 0) return;
+    settingsSelected = row;
+    const item = SETTINGS_ROWS[row];
+    if (item.kind === 'volume') {
+      const value = settingsBarValue(x, canvas);
+      if (value !== null) setVolume(item.id, value);
+    } else activateSetting(row);
+    return;
+  }
   if (mode === 'shop') {
     const { x, y } = canvasPoint(event);
     const row = shopRowAt(x, y, canvas);
@@ -479,7 +619,8 @@ const menuHeroes = [new Animator(atlas, 'hero.idle.down'), new Animator(atlas, '
 function update(dt) {
   profiler.begin('логика');
   transition.update(dt);
-  if (mode === 'menu' || mode === 'shop') for (const hero of menuHeroes) hero.update(dt);
+  pollGamepad();
+  if (mode === 'menu' || mode === 'shop' || mode === 'settings') for (const hero of menuHeroes) hero.update(dt);
   // Метель идёт в меню и в живом забеге; пауза и выбор апгрейда замораживают её.
   if (mode === 'menu' || (mode === 'playing' && !summary && !offers)) blizzard?.update(dt);
 
@@ -646,6 +787,10 @@ function render() {
   else if (mode === 'shop') {
     drawMenu();
     drawShopScreen(ctx, canvas, meta, shopSelected);
+  } else if (mode === 'settings') {
+    if (settingsReturn === 'paused') drawHud();
+    else drawMenu();
+    drawSettingsScreen(ctx, canvas, settings, settingsSelected, rebinding, settingsNotice);
   } else {
     drawHud();
     if (mode === 'paused') drawPauseScreen(ctx, canvas);

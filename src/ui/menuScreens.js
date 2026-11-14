@@ -82,6 +82,7 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
     { text: 'A / D — локация · W / S — герой', color: C.dim },
     ...(hero ? [{ text: `${hero.title}: ${hero.desc}`, color: hero.color }] : []),
     { text: `B — магазин · золото: ${gold}`, color: C.record },
+    { text: 'O — настройки', color: C.dim },
   ];
   if (record.runs > 0) {
     lines.push({
@@ -108,6 +109,7 @@ export function drawPauseScreen(ctx, canvas) {
   drawText(ctx, 'ПАУЗА', cx, 170, { scale: 8, align: 'center', color: C.title });
   drawHints(ctx, canvas, 170 + textHeight(8) + 28, [
     { text: 'Esc / P / клик — продолжить', color: C.accent },
+    { text: 'O — настройки' },
     { text: 'R — заново' },
     { text: 'M — в меню' },
   ]);

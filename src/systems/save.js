@@ -23,7 +23,7 @@ const LEGACY = {
 let cache = null;
 
 function emptySave() {
-  return { version: SAVE_VERSION, cleared: [], meta: null, record: null, hero: null, location: null };
+  return { version: SAVE_VERSION, cleared: [], meta: null, record: null, hero: null, location: null, settings: null };
 }
 
 function readJson(key) {

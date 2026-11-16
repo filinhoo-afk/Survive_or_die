@@ -17,6 +17,13 @@ const ROWS = [
   { field: 'crits', label: 'Критических ударов', format: formatNumber },
 ];
 
+/** Статус отправки в онлайн-таблицу; при выключенном бэкенде строки нет. */
+const ONLINE_LINES = {
+  sending: { text: 'Отправка рекорда...', color: C.dim },
+  sent: { text: 'Рекорд отправлен', color: C.record },
+  failed: { text: 'Рекорд не отправлен: нет связи', color: C.danger },
+};
+
 /**
  * Экран итогов забега: показатели против рекорда, кого и сколько убили,
  * с какой сборкой. summary — то, что собрал main.js в момент смерти.
@@ -88,6 +95,9 @@ export function drawSummaryScreen(ctx, canvas, summary) {
     drawText(ctx, line, labelX, y, { scale: SCALE, color: C.dim });
     y += buildHeight;
   }
+
+  const online = ONLINE_LINES[summary.submit];
+  if (online) drawText(ctx, online.text, canvas.width - 16, 16, { scale: SCALE, align: 'right', color: online.color });
 
   if (summary.gold > 0) {
     drawText(ctx, `+${formatNumber(summary.gold)} золота`, cx, canvas.height - 62, {

@@ -63,6 +63,7 @@ import { VOLUME_STEPS, defaultSettings, loadSettings, rebind, saveSettings } fro
 import { SETTINGS_ROWS, drawSettingsScreen, settingsBarValue, settingsRowAt } from './ui/settingsScreen.js';
 import { effectPool } from './systems/effects.js';
 import { ONLINE, createBackend } from './online/backend.js';
+import { SUBMIT, submitScore } from './online/submit.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -613,7 +614,20 @@ function finishRun(victory = false) {
   record = result.record;
   const gold = runGold(meta, stats, victory);
   meta = addGold(meta, gold);
-  summary = { stats, result, victory, location, gold, next: victory ? nextLocation() : undefined };
+  summary = {
+    stats,
+    result,
+    victory,
+    location,
+    gold,
+    next: victory ? nextLocation() : undefined,
+    submit: backend.configured ? SUBMIT.sending : SUBMIT.off,
+  };
+  // Отправка идёт в фоне; экран итогов сам перерисует итог, когда он придёт.
+  const shown = summary;
+  submitScore(backend, { stats, locationId: location.id, heroId: HEROES[heroIndex].id, victory }).then((sent) => {
+    if (backend.configured) shown.submit = sent.ok ? SUBMIT.sent : SUBMIT.failed;
+  });
   if (victory) audio.play('levelUp');
   else if (result.beaten.size > 0) audio.play('record');
 }

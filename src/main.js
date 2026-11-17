@@ -64,6 +64,8 @@ import { SETTINGS_ROWS, drawSettingsScreen, settingsBarValue, settingsRowAt } fr
 import { effectPool } from './systems/effects.js';
 import { ONLINE, createBackend } from './online/backend.js';
 import { SUBMIT, submitScore } from './online/submit.js';
+import { fetchTop } from './online/leaderboard.js';
+import { drawLeaderboardScreen } from './ui/leaderboardScreen.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -190,7 +192,7 @@ function padKey(button) {
   if (offers) return PAD_CARD_KEYS[button] ?? null;
   if (button === 'start') return mode === 'paused' ? 'Escape' : mode === 'menu' ? 'Enter' : null;
   if (button === 'x') return mode === 'paused' ? 'KeyM' : mode === 'menu' || mode === 'shop' ? 'KeyB' : null;
-  if (button === 'y') return mode === 'paused' || summary ? 'KeyR' : null;
+  if (button === 'y') return mode === 'paused' || summary || mode === 'leaderboard' ? 'KeyR' : mode === 'menu' ? 'KeyT' : null;
   // Пока ждём клавишу для переназначения, геймпад только отменяет.
   if (rebinding) return button === 'b' ? 'Escape' : null;
   if (button === 'lb' && mode !== 'menu' && mode !== 'paused') return null;
@@ -438,6 +440,13 @@ function onKey(event) {
     return;
   }
 
+  if (mode === 'leaderboard') {
+    if (event.code === 'Escape' || event.code === 'KeyT') mode = 'menu';
+    else if (event.code in MENU_SHIFT) shiftBoard(MENU_SHIFT[event.code]);
+    else if (event.code === 'KeyR') loadBoard(LOCATION_LIST[boardIndex].id, true);
+    return;
+  }
+
   if (mode === 'shop') {
     if (event.code === 'Escape' || event.code === 'KeyB') mode = 'menu';
     else if (event.code === 'KeyW' || event.code === 'ArrowUp') {
@@ -451,6 +460,7 @@ function onKey(event) {
   if (mode === 'menu') {
     if (event.code === 'KeyB') mode = 'shop';
     else if (event.code === 'KeyO') openSettings();
+    else if (event.code === 'KeyT') openBoard();
     else if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
     else if (event.code === 'KeyW' || event.code === 'ArrowUp') shiftHero(-1);
@@ -597,6 +607,33 @@ backend.check().then((state) => {
   online = state;
 });
 
+/** Таблица рекордов: топ каждой локации загружается при первом показе и по R. */
+const heroTitles = new Map(HEROES.map((h) => [h.id, h.title]));
+const boards = new Map();
+let boardIndex = 0;
+
+function loadBoard(locationId, force = false) {
+  if (!force && boards.get(locationId)?.status === 'ok') return;
+  if (boards.get(locationId)?.status === 'loading') return;
+  boards.set(locationId, { status: 'loading' });
+  fetchTop(backend, locationId).then((result) => {
+    boards.set(locationId, result.ok ? { status: 'ok', rows: result.rows } : { status: 'error' });
+  });
+}
+
+function openBoard() {
+  boardIndex = Math.max(0, LOCATION_LIST.indexOf(location));
+  loadBoard(LOCATION_LIST[boardIndex].id);
+  mode = 'leaderboard';
+  audio.play('pick');
+}
+
+function shiftBoard(step) {
+  boardIndex = (boardIndex + step + LOCATION_LIST.length) % LOCATION_LIST.length;
+  loadBoard(LOCATION_LIST[boardIndex].id);
+  audio.play('pick');
+}
+
 /** Фиксирует итоги забега и обновляет рекорд; victory — босс повержен. */
 function finishRun(victory = false) {
   const stats = {
@@ -642,7 +679,7 @@ function update(dt) {
   profiler.begin('логика');
   transition.update(dt);
   pollGamepad();
-  if (mode === 'menu' || mode === 'shop' || mode === 'settings') for (const hero of menuHeroes) hero.update(dt);
+  if (mode === 'menu' || mode === 'shop' || mode === 'settings' || mode === 'leaderboard') for (const hero of menuHeroes) hero.update(dt);
   // Метель идёт в меню и в живом забеге; пауза и выбор апгрейда замораживают её.
   if (mode === 'menu' || (mode === 'playing' && !summary && !offers)) blizzard?.update(dt);
 
@@ -809,6 +846,10 @@ function render() {
   else if (mode === 'shop') {
     drawMenu();
     drawShopScreen(ctx, canvas, meta, shopSelected);
+  } else if (mode === 'leaderboard') {
+    drawMenu();
+    const board = LOCATION_LIST[boardIndex];
+    drawLeaderboardScreen(ctx, canvas, board, boardIndex, LOCATION_LIST.length, boards.get(board.id), heroTitles, online);
   } else if (mode === 'settings') {
     if (settingsReturn === 'paused') drawHud();
     else drawMenu();

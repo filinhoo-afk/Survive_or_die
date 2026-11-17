@@ -92,7 +92,7 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
     { text: 'A / D — локация · W / S — герой', color: C.dim },
     ...(hero ? [{ text: `${hero.title}: ${hero.desc}`, color: hero.color }] : []),
     { text: `B — магазин · золото: ${gold}`, color: C.record },
-    { text: 'O — настройки', color: C.dim },
+    { text: 'T — рекорды · O — настройки', color: C.dim },
   ];
   if (record.runs > 0) {
     lines.push({

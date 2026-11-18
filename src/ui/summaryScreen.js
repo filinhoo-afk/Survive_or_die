@@ -22,6 +22,7 @@ const ONLINE_LINES = {
   sending: { text: 'Отправка рекорда...', color: C.dim },
   sent: { text: 'Рекорд отправлен', color: C.record },
   failed: { text: 'Рекорд не отправлен: нет связи', color: C.danger },
+  rejected: { text: 'Рекорд отклонён сервером', color: C.danger },
 };
 
 /**

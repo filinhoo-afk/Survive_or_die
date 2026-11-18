@@ -7,6 +7,13 @@
  * а повторять неудачный запрос игрок не обязан — рекорд просто не уйдёт.
  */
 
+/**
+ * Код ошибки Postgres «нарушено ограничение check». Им же отвечает проверка
+ * правдоподобия (supabase/migrations/002_plausibility.sql): для игры это
+ * одно и то же — сервер отказался принять результат, повторять бесполезно.
+ */
+export const REJECTED_CODE = '23514';
+
 /** Рамки совпадают с ограничениями таблицы. */
 const LIMITS = {
   time_sec: [1, 14400],
@@ -20,7 +27,8 @@ export const SUBMIT = {
   off: 'off', // бэкенд не настроен — отправлять некуда
   sending: 'sending',
   sent: 'sent',
-  failed: 'failed',
+  failed: 'failed', // нет связи или сбой сервера
+  rejected: 'rejected', // сервер счёл результат неправдоподобным
 };
 
 function clampInt(value, [min, max]) {
@@ -43,11 +51,12 @@ export function buildScoreRow({ stats, locationId, heroId, victory }) {
 }
 
 /**
- * Отправляет забег. Вызывающий сам решает, что показать игроку.
- * @returns {Promise<{ ok: boolean, error?: string }>}
+ * Отправляет забег и возвращает состояние для экрана итогов.
+ * @returns {Promise<string>} одно из значений SUBMIT
  */
 export async function submitScore(backend, run) {
-  if (!backend.configured) return { ok: false, error: 'not-configured' };
+  if (!backend.configured) return SUBMIT.off;
   const result = await backend.request('POST', '', buildScoreRow(run), { Prefer: 'return=minimal' });
-  return result.ok ? { ok: true } : { ok: false, error: result.error };
+  if (result.ok) return SUBMIT.sent;
+  return result.error === REJECTED_CODE ? SUBMIT.rejected : SUBMIT.failed;
 }

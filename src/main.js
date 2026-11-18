@@ -662,8 +662,8 @@ function finishRun(victory = false) {
   };
   // Отправка идёт в фоне; экран итогов сам перерисует итог, когда он придёт.
   const shown = summary;
-  submitScore(backend, { stats, locationId: location.id, heroId: HEROES[heroIndex].id, victory }).then((sent) => {
-    if (backend.configured) shown.submit = sent.ok ? SUBMIT.sent : SUBMIT.failed;
+  submitScore(backend, { stats, locationId: location.id, heroId: HEROES[heroIndex].id, victory }).then((state) => {
+    shown.submit = state;
   });
   if (victory) audio.play('levelUp');
   else if (result.beaten.size > 0) audio.play('record');

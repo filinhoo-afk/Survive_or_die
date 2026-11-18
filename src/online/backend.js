@@ -32,13 +32,13 @@ export function createBackend(options = CONFIG.online, fetchImpl = (...args) => 
   const timeout = options.timeout ?? 6000;
   const configured = url !== '' && key !== '';
 
-  /** Запрос к таблице; query — строка параметров PostgREST без «?». */
-  async function request(method, query = '', body, headers = {}) {
+  /** Запрос к REST-адресу проекта; path — после /rest/v1/, query — параметры без «?». */
+  async function send(path, method, query = '', body, headers = {}) {
     if (!configured) return { ok: false, status: 0, error: 'not-configured' };
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
     try {
-      const response = await fetchImpl(`${url}/rest/v1/${TABLE}${query ? `?${query}` : ''}`, {
+      const response = await fetchImpl(`${url}/rest/v1/${path}${query ? `?${query}` : ''}`, {
         method,
         headers: {
           apikey: key,
@@ -67,9 +67,20 @@ export function createBackend(options = CONFIG.online, fetchImpl = (...args) => 
     }
   }
 
+  /** Запрос к таблице; query — строка параметров PostgREST без «?». */
+  function request(method, query = '', body, headers = {}) {
+    return send(TABLE, method, query, body, headers);
+  }
+
+  /** Вызов функции базы (POST /rest/v1/rpc/<name>); args — её параметры по именам. */
+  function rpc(name, args = {}) {
+    return send(`rpc/${name}`, 'POST', '', args);
+  }
+
   return {
     configured,
     request,
+    rpc,
     /** Есть ли связь и видна ли таблица: читает одну строку. */
     async check() {
       if (!configured) return ONLINE.off;

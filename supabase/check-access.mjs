@@ -7,6 +7,11 @@
  * можно, и то, что нельзя. В таблицу при этом ничего не попадает: «плохие»
  * запросы составлены так, что база обязана их отклонить, а update и delete
  * нацелены на строку, которой не бывает (id = -1).
+ *
+ * Правила правдоподобия (002_plausibility.sql) проверяются вызовом функции
+ * score_problem — она только отвечает, ничего не записывая. Вставку
+ * подделки скрипт пробует, лишь убедившись, что эта функция на месте:
+ * без миграции 002 подделка легла бы в таблицу.
  */
 
 import { createBackend } from '../src/online/backend.js';
@@ -61,13 +66,73 @@ const cases = [
   },
 ];
 
+/** Честный, но очень удачный забег: должен проходить всегда. */
+const strongRun = {
+  location: 'forest',
+  hero: 'warden',
+  time_sec: 540,
+  kills: 1400,
+  level: 45,
+  damage: 260000,
+  victory: true,
+};
+
+/** Подделки: у каждой одна неправдоподобная деталь. */
+const fakes = [
+  ['победа там, где нет босса', { ...strongRun, location: 'wasteland' }],
+  ['победа раньше выхода босса', { ...strongRun, time_sec: 300 }],
+  ['тысячи убийств за минуту', { ...strongRun, victory: false, time_sec: 60, kills: 5000, damage: 900000 }],
+  ['убийства без урона', { ...strongRun, damage: 3000 }],
+  ['урона больше, чем у врагов здоровья', { ...strongRun, damage: 999000000 }],
+  ['сотый уровень при десятке убийств', { ...strongRun, victory: false, kills: 10, level: 100, damage: 2000 }],
+];
+
+/** Строка таблицы → параметры функции score_problem. */
+const problemOf = (row) =>
+  backend.rpc('score_problem', {
+    p_location: row.location,
+    p_time_sec: row.time_sec,
+    p_kills: row.kills,
+    p_level: row.level,
+    p_damage: row.damage,
+    p_victory: row.victory,
+  });
+
+const probe = await problemOf(strongRun);
+if (probe.ok) {
+  cases.push({
+    name: 'честный удачный забег правдоподобен',
+    run: () => problemOf(strongRun),
+    pass: (r) => r.ok && r.data === null,
+  });
+  for (const [name, row] of fakes) {
+    cases.push({
+      name: `подделка отклонена: ${name}`,
+      run: () => problemOf(row),
+      pass: (r) => r.ok && typeof r.data === 'string',
+    });
+  }
+  cases.push({
+    name: 'неправдоподобную строку база не принимает',
+    run: () => backend.request('POST', '', fakes[2][1], { Prefer: 'return=minimal' }),
+    pass: (r) => r.error === CHECK,
+  });
+}
+
 let failed = 0;
 for (const test of cases) {
   const result = await test.run();
   const ok = test.pass(result);
   if (!ok) failed += 1;
   const detail = result.ok ? `HTTP ${result.status}` : `HTTP ${result.status}, ${result.error}`;
-  console.log(`${ok ? 'OK  ' : 'FAIL'} ${test.name} (${detail})`);
+  const reason = typeof result.data === 'string' ? ` — ${result.data}` : '';
+  console.log(`${ok ? 'OK  ' : 'FAIL'} ${test.name} (${detail})${reason}`);
+}
+
+if (!probe.ok) {
+  failed += 1;
+  console.log(`FAIL правила правдоподобия не найдены (HTTP ${probe.status}, ${probe.error})`);
+  console.log('     Выполни supabase/migrations/002_plausibility.sql в SQL Editor.');
 }
 
 console.log(failed === 0 ? '\nПравила доступа работают.' : `\nНе прошло проверок: ${failed}.`);

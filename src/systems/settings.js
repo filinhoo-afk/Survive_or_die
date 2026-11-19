@@ -23,7 +23,7 @@ export const DEFAULT_BINDINGS = {
 
 /** Клавиши, которые заняты меню и общими командами, — на движение их не отдаём. */
 export const RESERVED_KEYS = new Set([
-  'Escape', 'Enter', 'Space', 'F3', 'KeyN', 'KeyP', 'KeyR', 'KeyM', 'KeyB', 'KeyO', 'KeyT',
+  'Escape', 'Enter', 'Space', 'F3', 'KeyN', 'KeyP', 'KeyR', 'KeyM', 'KeyB', 'KeyO', 'KeyT', 'KeyI',
   'Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3',
 ]);
 

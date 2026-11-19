@@ -11,11 +11,12 @@ const MEDALS = ['#ffd34e', '#c9d1d9', '#d08a4e'];
 /** Колонки: заголовок, отступ слева от рамки, выравнивание. */
 const COLUMNS = [
   { title: '', x: 16, align: 'left' },
-  { title: 'ГЕРОЙ', x: 60, align: 'left' },
-  { title: 'УБИЙСТВ', x: 380, align: 'right' },
-  { title: 'ВРЕМЯ', x: 470, align: 'right' },
-  { title: 'УР', x: 540, align: 'right' },
-  { title: 'УРОН', x: 650, align: 'right' },
+  { title: 'ИГРОК', x: 50, align: 'left' },
+  { title: 'ГЕРОЙ', x: 218, align: 'left' },
+  { title: 'УБИЙСТВ', x: 412, align: 'right' },
+  { title: 'ВРЕМЯ', x: 494, align: 'right' },
+  { title: 'УР', x: 546, align: 'right' },
+  { title: 'УРОН', x: 690, align: 'right' },
 ];
 
 /**
@@ -50,14 +51,14 @@ export function drawLeaderboardScreen(ctx, canvas, location, index, total, entry
     const rank = MEDALS[i] ?? C.text;
     drawText(ctx, String(i + 1), left + COLUMNS[0].x, textY, { scale: 2, color: rank });
     if (!row) continue;
-    drawText(ctx, heroTitles.get(row.hero) ?? row.hero, left + COLUMNS[1].x, textY, {
-      scale: 2,
-      color: row.victory ? C.record : C.text,
-    });
-    drawText(ctx, formatNumber(row.kills), left + COLUMNS[2].x, textY, { scale: 2, align: 'right', color: C.accent });
-    drawText(ctx, formatTime(row.time), left + COLUMNS[3].x, textY, { scale: 2, align: 'right' });
-    drawText(ctx, String(row.level), left + COLUMNS[4].x, textY, { scale: 2, align: 'right' });
-    drawText(ctx, formatNumber(row.damage), left + COLUMNS[5].x, textY, { scale: 2, align: 'right', color: C.dim });
+    // Победа над боссом — золотом; безымянные результаты подписаны «—».
+    const color = row.victory ? C.record : C.text;
+    drawText(ctx, row.nick || '—', left + COLUMNS[1].x, textY, { scale: 2, color: row.nick ? color : C.dim });
+    drawText(ctx, heroTitles.get(row.hero) ?? row.hero, left + COLUMNS[2].x, textY, { scale: 2, color: C.dim });
+    drawText(ctx, formatNumber(row.kills), left + COLUMNS[3].x, textY, { scale: 2, align: 'right', color: C.accent });
+    drawText(ctx, formatTime(row.time), left + COLUMNS[4].x, textY, { scale: 2, align: 'right' });
+    drawText(ctx, String(row.level), left + COLUMNS[5].x, textY, { scale: 2, align: 'right' });
+    drawText(ctx, formatNumber(row.damage), left + COLUMNS[6].x, textY, { scale: 2, align: 'right', color: C.dim });
   }
 
   // Сообщение поверх пустой таблицы: загрузка, ошибка или «пока никого».

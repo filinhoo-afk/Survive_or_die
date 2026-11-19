@@ -69,11 +69,17 @@ const ONLINE_LABELS = {
 };
 
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
-export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off') {
+export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off', nick = '') {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
   const link = ONLINE_LABELS[online] ?? ONLINE_LABELS.off;
   drawText(ctx, link.text, 16, 16, { scale: 2, color: link.color });
+  // Ник в углу напротив связи: под каким именем результат уйдёт в таблицу.
+  drawText(ctx, nick ? `ИГРОК: ${nick}` : 'ИГРОК: БЕЗ НИКА', canvas.width - 16, 16, {
+    scale: 2,
+    align: 'right',
+    color: nick ? C.accent : C.dim,
+  });
   const { list, selected, cleared } = campaign;
   const location = list[selected];
   const open = selected === 0 || cleared.has(list[selected - 1].id);
@@ -92,7 +98,7 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
     { text: 'A / D — локация · W / S — герой', color: C.dim },
     ...(hero ? [{ text: `${hero.title}: ${hero.desc}`, color: hero.color }] : []),
     { text: `B — магазин · золото: ${gold}`, color: C.record },
-    { text: 'T — рекорды · O — настройки', color: C.dim },
+    { text: 'T — рекорды · O — настройки · I — ник', color: C.dim },
   ];
   if (record.runs > 0) {
     lines.push({

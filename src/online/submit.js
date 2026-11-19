@@ -7,6 +7,8 @@
  * а повторять неудачный запрос игрок не обязан — рекорд просто не уйдёт.
  */
 
+import { isValidNick } from '../systems/nickname.js';
+
 /**
  * Код ошибки Postgres «нарушено ограничение check». Им же отвечает проверка
  * правдоподобия (supabase/migrations/002_plausibility.sql): для игры это
@@ -37,9 +39,18 @@ function clampInt(value, [min, max]) {
   return Math.min(max, Math.max(min, n));
 }
 
-/** Строка таблицы `scores` по итогам забега. */
-export function buildScoreRow({ stats, locationId, heroId, victory }) {
-  return {
+/**
+ * PostgREST так отвечает, когда в запросе есть колонка, которой нет в таблице:
+ * миграция 003_nickname.sql ещё не применена.
+ */
+const UNKNOWN_COLUMN = 'PGRST204';
+
+/**
+ * Строка таблицы `scores` по итогам забега. Ник кладётся, только если он
+ * допустим: безымянные результаты уходят как раньше, без поля `nick`.
+ */
+export function buildScoreRow({ stats, locationId, heroId, victory, nick }) {
+  const row = {
     location: locationId,
     hero: heroId,
     time_sec: clampInt(stats.time, LIMITS.time_sec),
@@ -48,15 +59,24 @@ export function buildScoreRow({ stats, locationId, heroId, victory }) {
     damage: clampInt(stats.damage, LIMITS.damage),
     victory: Boolean(victory),
   };
+  if (isValidNick(nick)) row.nick = nick;
+  return row;
 }
 
 /**
  * Отправляет забег и возвращает состояние для экрана итогов.
+ * Если сервер ещё не знает колонку `nick`, результат уходит без имени:
+ * рекорд важнее подписи.
  * @returns {Promise<string>} одно из значений SUBMIT
  */
 export async function submitScore(backend, run) {
   if (!backend.configured) return SUBMIT.off;
-  const result = await backend.request('POST', '', buildScoreRow(run), { Prefer: 'return=minimal' });
+  const row = buildScoreRow(run);
+  let result = await backend.request('POST', '', row, { Prefer: 'return=minimal' });
+  if (!result.ok && result.error === UNKNOWN_COLUMN && 'nick' in row) {
+    delete row.nick;
+    result = await backend.request('POST', '', row, { Prefer: 'return=minimal' });
+  }
   if (result.ok) return SUBMIT.sent;
   return result.error === REJECTED_CODE ? SUBMIT.rejected : SUBMIT.failed;
 }

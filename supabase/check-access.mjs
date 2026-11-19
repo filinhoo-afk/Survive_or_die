@@ -12,6 +12,8 @@
  * score_problem — она только отвечает, ничего не записывая. Вставку
  * подделки скрипт пробует, лишь убедившись, что эта функция на месте:
  * без миграции 002 подделка легла бы в таблицу.
+ *
+ * Никнейм (003_nickname.sql) проверяется так же: функцией nick_valid.
  */
 
 import { createBackend } from '../src/online/backend.js';
@@ -119,6 +121,38 @@ if (probe.ok) {
   });
 }
 
+/**
+ * Правило никнейма (003_nickname.sql) — тоже вызовом чистой функции nick_valid.
+ * Колонку и право на неё проверяем строкой, которую база всё равно отклонит
+ * (такой локации нет): ошибка check значит «колонка есть и право выдано».
+ */
+const goodNicks = ['ИГРОК', 'AB 12', 'X', 'ВОИН-7', 'ABCDEFGHIJKL'];
+const badNicks = ['', 'lowercase', 'A  B', '-AB', 'AB-', 'ABCDEFGHIJKLM', '<SCRIPT>', 'ИГРОК_1'];
+const nickValid = (nick) => backend.rpc('nick_valid', { p_nick: nick });
+
+const nickProbe = await nickValid('ИГРОК');
+if (nickProbe.ok) {
+  for (const nick of goodNicks) {
+    cases.push({
+      name: `ник допустим: «${nick}»`,
+      run: () => nickValid(nick),
+      pass: (r) => r.ok && r.data === true,
+    });
+  }
+  for (const nick of badNicks) {
+    cases.push({
+      name: `ник отклонён: «${nick}»`,
+      run: () => nickValid(nick),
+      pass: (r) => r.ok && r.data === false,
+    });
+  }
+  cases.push({
+    name: 'колонка nick есть, добавлять в неё можно',
+    run: () => backend.request('POST', '', { ...badRow, nick: 'ИГРОК' }, { Prefer: 'return=minimal' }),
+    pass: (r) => r.error === CHECK,
+  });
+}
+
 let failed = 0;
 for (const test of cases) {
   const result = await test.run();
@@ -133,6 +167,12 @@ if (!probe.ok) {
   failed += 1;
   console.log(`FAIL правила правдоподобия не найдены (HTTP ${probe.status}, ${probe.error})`);
   console.log('     Выполни supabase/migrations/002_plausibility.sql в SQL Editor.');
+}
+
+if (!nickProbe.ok) {
+  failed += 1;
+  console.log(`FAIL правило никнейма не найдено (HTTP ${nickProbe.status}, ${nickProbe.error})`);
+  console.log('     Выполни supabase/migrations/003_nickname.sql в SQL Editor.');
 }
 
 console.log(failed === 0 ? '\nПравила доступа работают.' : `\nНе прошло проверок: ${failed}.`);

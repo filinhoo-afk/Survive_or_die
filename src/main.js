@@ -66,6 +66,8 @@ import { ONLINE, createBackend } from './online/backend.js';
 import { SUBMIT, submitScore } from './online/submit.js';
 import { fetchTop } from './online/leaderboard.js';
 import { drawLeaderboardScreen } from './ui/leaderboardScreen.js';
+import { NICK_MAX, loadNick, saveNick, typeChar } from './systems/nickname.js';
+import { drawNicknameScreen } from './ui/nicknameScreen.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -183,11 +185,52 @@ function captureBinding(code) {
   audio.play('pick');
 }
 
+/** Никнейм игрока и то, что набрано на экране ввода, пока Enter не сохранил. */
+let nick = loadNick();
+let nickDraft = '';
+let nickNotice = '';
+
+function openNickname() {
+  nickDraft = nick;
+  nickNotice = '';
+  mode = 'nick';
+  audio.play('pick');
+}
+
+/**
+ * Клавиша на экране ввода: символ дописывается, Backspace стирает,
+ * Enter сохраняет (пустой ник — без имени), Esc отменяет.
+ */
+function captureNickname(event) {
+  if (event.code === 'Escape') {
+    mode = 'menu';
+  } else if (event.code === 'Enter') {
+    saveNick(nickDraft);
+    nick = loadNick();
+    mode = 'menu';
+    audio.play('pick');
+  } else if (event.code === 'Backspace') {
+    nickDraft = nickDraft.slice(0, -1);
+    nickNotice = '';
+  } else if (event.key && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    const next = typeChar(nickDraft, event.key);
+    if (next !== null) {
+      nickDraft = next;
+      nickNotice = '';
+    } else if (event.key.length === 1) {
+      nickNotice = nickDraft.length >= NICK_MAX ? `Не больше ${NICK_MAX} символов` : 'Такой символ нельзя';
+      audio.play('hit');
+    }
+  }
+}
+
 /** Геймпад листает меню как клавиатура: кнопки превращаются в коды клавиш. */
 const PAD_MENU_KEYS = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', a: 'Enter', b: 'Escape', lb: 'KeyO' };
 const PAD_CARD_KEYS = { a: 'Digit1', b: 'Digit2', x: 'Digit3' };
 
 function padKey(button) {
+  // Ник набирают с клавиатуры; геймпаду остаётся сохранить или отменить.
+  if (mode === 'nick') return button === 'a' ? 'Enter' : button === 'b' ? 'Escape' : null;
   if (mode === 'playing' && !summary && !offers) return button === 'start' ? 'Escape' : null;
   if (offers) return PAD_CARD_KEYS[button] ?? null;
   if (button === 'start') return mode === 'paused' ? 'Escape' : mode === 'menu' ? 'Enter' : null;
@@ -416,6 +459,12 @@ function onKey(event) {
     captureBinding(event.code);
     return;
   }
+  // Пока набирается ник, клавиши — это буквы: ни звук (N), ни меню (O, T) не трогаем.
+  if (mode === 'nick') {
+    event.preventDefault?.();
+    captureNickname(event);
+    return;
+  }
   if (event.code === 'KeyN') {
     audio.toggleMute();
     return;
@@ -461,6 +510,7 @@ function onKey(event) {
     if (event.code === 'KeyB') mode = 'shop';
     else if (event.code === 'KeyO') openSettings();
     else if (event.code === 'KeyT') openBoard();
+    else if (event.code === 'KeyI') openNickname();
     else if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
     else if (event.code === 'KeyW' || event.code === 'ArrowUp') shiftHero(-1);
@@ -534,6 +584,7 @@ canvas.addEventListener('click', (event) => {
   audio.unlock();
   audio.startMusic();
   if (transition.busy) return;
+  if (mode === 'nick' || mode === 'leaderboard') return;
   if (mode === 'settings') {
     const { x, y } = canvasPoint(event);
     const row = settingsRowAt(x, y, canvas);
@@ -662,7 +713,7 @@ function finishRun(victory = false) {
   };
   // Отправка идёт в фоне; экран итогов сам перерисует итог, когда он придёт.
   const shown = summary;
-  submitScore(backend, { stats, locationId: location.id, heroId: HEROES[heroIndex].id, victory }).then((state) => {
+  submitScore(backend, { stats, locationId: location.id, heroId: HEROES[heroIndex].id, victory, nick }).then((state) => {
     shown.submit = state;
   });
   if (victory) audio.play('levelUp');
@@ -679,7 +730,9 @@ function update(dt) {
   profiler.begin('логика');
   transition.update(dt);
   pollGamepad();
-  if (mode === 'menu' || mode === 'shop' || mode === 'settings' || mode === 'leaderboard') for (const hero of menuHeroes) hero.update(dt);
+  if (mode === 'menu' || mode === 'shop' || mode === 'settings' || mode === 'leaderboard' || mode === 'nick') {
+    for (const hero of menuHeroes) hero.update(dt);
+  }
   // Метель идёт в меню и в живом забеге; пауза и выбор апгрейда замораживают её.
   if (mode === 'menu' || (mode === 'playing' && !summary && !offers)) blizzard?.update(dt);
 
@@ -850,6 +903,9 @@ function render() {
     drawMenu();
     const board = LOCATION_LIST[boardIndex];
     drawLeaderboardScreen(ctx, canvas, board, boardIndex, LOCATION_LIST.length, boards.get(board.id), heroTitles, online);
+  } else if (mode === 'nick') {
+    drawMenu();
+    drawNicknameScreen(ctx, canvas, nickDraft, nickNotice);
   } else if (mode === 'settings') {
     if (settingsReturn === 'paused') drawHud();
     else drawMenu();
@@ -1071,7 +1127,7 @@ function drawMenu() {
     list: LOCATION_LIST,
     selected: LOCATION_LIST.indexOf(location),
     cleared,
-  }, meta.gold, HEROES[heroIndex], online);
+  }, meta.gold, HEROES[heroIndex], online, nick);
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

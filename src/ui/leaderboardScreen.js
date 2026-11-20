@@ -20,18 +20,19 @@ const COLUMNS = [
 ];
 
 /**
- * Экран таблицы рекордов одной локации.
+ * Экран таблицы рекордов: одной локации или испытания дня.
+ * @param {{ title: string, subtitle: string, daily?: boolean }} heading заголовок и подзаголовок
  * @param {{ status: 'loading' | 'ok' | 'error', rows?: object[] } | undefined} entry загруженное состояние
  * @param {Map<string, string>} heroTitles название героя по id
  */
-export function drawLeaderboardScreen(ctx, canvas, location, index, total, entry, heroTitles, online) {
+export function drawLeaderboardScreen(ctx, canvas, heading, entry, heroTitles, online) {
   ctx.fillStyle = 'rgba(8, 10, 16, 0.9)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const cx = canvas.width / 2;
   const left = (canvas.width - ROW_WIDTH) / 2;
 
-  drawText(ctx, 'РЕКОРДЫ', cx, 24, { scale: 5, align: 'center', color: C.title });
-  drawText(ctx, `${location.title}  ${index + 1}/${total}`, cx, 76, {
+  drawText(ctx, heading.title, cx, 24, { scale: 5, align: 'center', color: C.title });
+  drawText(ctx, heading.subtitle, cx, 76, {
     scale: 3,
     align: 'center',
     color: C.accent,
@@ -69,14 +70,17 @@ export function drawLeaderboardScreen(ctx, canvas, location, index, total, entry
   else if (entry.status === 'error') {
     message = 'Не удалось загрузить таблицу';
     color = C.danger;
-  } else if (entry.rows.length === 0) message = 'Пока пусто — станьте первым!';
+  } else if (entry.rows.length === 0) message = heading.daily ? 'Сегодня ещё никто не играл' : 'Пока пусто — станьте первым!';
   if (message) {
     const y = TOP + 4 * (ROW_HEIGHT + ROW_GAP);
     pixelPanel(ctx, cx - 240, y, 480, 44, C.well, C.border);
     drawText(ctx, message, cx, y + 15, { scale: 2, align: 'center', color });
   }
 
-  drawText(ctx, 'A / D — локация · R — обновить · Esc / T — назад', cx, canvas.height - 28, {
+  const hint = heading.daily
+    ? 'C — к локациям · R — обновить · Esc / T — назад'
+    : 'A / D — локация · C — испытание дня · R — обновить · Esc / T — назад';
+  drawText(ctx, hint, cx, canvas.height - 28, {
     scale: 2,
     align: 'center',
     color: C.dim,

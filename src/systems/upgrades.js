@@ -1,4 +1,5 @@
 import { EVOLUTIONS, WEAPONS } from '../weapons/index.js';
+import { random as rand } from './rng.js';
 
 /**
  * Пассивные улучшения игрока. Каждое описано через get / next / set:
@@ -210,7 +211,7 @@ export class UpgradeState {
    * Готовая эволюция в выбор попадает всегда: игрок шёл к ней весь забег,
    * и прятать её за случайностью было бы обидно.
    */
-  roll(count, random = Math.random) {
+  roll(count, random = () => rand()) {
     const pool = this.candidates();
     const picked = this.readyEvolutions().slice(0, count);
 

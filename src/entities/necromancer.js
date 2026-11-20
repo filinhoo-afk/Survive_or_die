@@ -1,6 +1,7 @@
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
 import { spawnEnemyShot } from './enemyShot.js';
+import { random } from '../systems/rng.js';
 
 /**
  * Фазы Некроманта; вторая включается ниже `until` доли здоровья.
@@ -155,7 +156,7 @@ export class Necromancer extends Enemy {
   summon(enemies) {
     if (!enemies || enemies.length >= MAX_ENEMIES) return;
     const { count } = this.phase.summon;
-    const start = Math.random() * Math.PI * 2;
+    const start = random() * Math.PI * 2;
     for (let i = 0; i < count; i += 1) {
       const angle = start + (i / count) * Math.PI * 2;
       enemies.push(
@@ -172,7 +173,7 @@ export class Necromancer extends Enemy {
   /** Прыжок на `distance` от игрока в случайную сторону, но в пределах мира. */
   teleport(target, shots) {
     const phase = this.phase;
-    const angle = Math.random() * Math.PI * 2;
+    const angle = random() * Math.PI * 2;
     let x = target.x + Math.cos(angle) * phase.teleport.distance;
     let y = target.y + Math.sin(angle) * phase.teleport.distance;
     if (this.world) {

@@ -14,9 +14,15 @@
  * без миграции 002 подделка легла бы в таблицу.
  *
  * Никнейм (003_nickname.sql) проверяется так же: функцией nick_valid.
+ *
+ * Испытание дня (004_daily.sql): функция daily_challenge должна отвечать так же,
+ * как формулы в игре (src/systems/daily.js) — иначе сервер отклонял бы честные
+ * результаты. Правила даты и совпадения локации с испытанием без записи в
+ * таблицу не проверить: подходящая строка была бы принята, поэтому их здесь нет.
  */
 
 import { createBackend } from '../src/online/backend.js';
+import { dailyChallenge } from '../src/systems/daily.js';
 
 const backend = createBackend();
 if (!backend.configured) {
@@ -153,6 +159,38 @@ if (nickProbe.ok) {
   });
 }
 
+/**
+ * Испытание дня: сервер и игра выбирают одно и то же. Даты — от эпохи до
+ * далёкого будущего, с границами месяцев и високосным днём.
+ */
+const dailyDates = ['1970-01-01', '2024-02-29', '2026-11-20', '2026-11-21', '2027-01-01', '2035-12-31'];
+const dailyOf = (date) => backend.rpc('daily_challenge', { p_date: date });
+
+const dailyProbe = await dailyOf(dailyDates[0]);
+if (dailyProbe.ok) {
+  for (const date of dailyDates) {
+    const mine = dailyChallenge(date);
+    cases.push({
+      name: `испытание ${date}: сервер и игра совпадают (${mine.locationId}, ${mine.heroId})`,
+      run: () => dailyOf(date),
+      pass: (r) => {
+        const row = Array.isArray(r.data) ? r.data[0] : null;
+        return r.ok && row?.seed === mine.seed && row?.location === mine.locationId && row?.hero === mine.heroId;
+      },
+    });
+  }
+  cases.push({
+    name: 'колонка daily есть, добавлять в неё можно',
+    run: () => backend.request('POST', '', { ...badRow, daily: dailyDates[2] }, { Prefer: 'return=minimal' }),
+    pass: (r) => r.error === CHECK,
+  });
+  cases.push({
+    name: 'таблица испытания читается',
+    run: () => backend.request('GET', `select=id&daily=eq.${dailyDates[2]}&limit=1`),
+    pass: (r) => r.ok,
+  });
+}
+
 let failed = 0;
 for (const test of cases) {
   const result = await test.run();
@@ -173,6 +211,12 @@ if (!nickProbe.ok) {
   failed += 1;
   console.log(`FAIL правило никнейма не найдено (HTTP ${nickProbe.status}, ${nickProbe.error})`);
   console.log('     Выполни supabase/migrations/003_nickname.sql в SQL Editor.');
+}
+
+if (!dailyProbe.ok) {
+  failed += 1;
+  console.log(`FAIL правило испытания дня не найдено (HTTP ${dailyProbe.status}, ${dailyProbe.error})`);
+  console.log('     Выполни supabase/migrations/004_daily.sql в SQL Editor.');
 }
 
 console.log(failed === 0 ? '\nПравила доступа работают.' : `\nНе прошло проверок: ${failed}.`);

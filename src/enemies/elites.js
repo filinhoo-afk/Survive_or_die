@@ -7,6 +7,8 @@
  *   knockbackResist       — добавка к сопротивлению отбросу;
  *   drop                  — гарантированно роняет предмет.
  */
+import { random } from '../systems/rng.js';
+
 export const ELITE = {
   /** Во сколько раз элита крупнее обычного врага (спрайт округляется до целого пикселя). */
   size: 1.3,
@@ -30,7 +32,7 @@ export const ELITE_MODIFIERS = {
 /** Случайный модификатор: все равновероятны. */
 export function rollModifier() {
   const all = Object.values(ELITE_MODIFIERS);
-  return all[Math.floor(Math.random() * all.length)];
+  return all[Math.floor(random('spawn') * all.length)];
 }
 
 /** Шанс, что новый враг окажется элитой, через `seconds` секунд забега. */

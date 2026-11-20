@@ -69,7 +69,7 @@ const ONLINE_LABELS = {
 };
 
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
-export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off', nick = '') {
+export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off', nick = '', daily = null) {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
   const link = ONLINE_LABELS[online] ?? ONLINE_LABELS.off;
@@ -80,6 +80,15 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
     align: 'right',
     color: nick ? C.accent : C.dim,
   });
+  // Испытание дня — над заголовком: общий для всех мир, играется в любой момент.
+  if (daily) {
+    drawText(ctx, `ИСПЫТАНИЕ ДНЯ · ${daily.date}`, cx, 40, { scale: 2, align: 'center', color: C.record });
+    drawText(ctx, `${daily.location} · ${daily.hero} · СИД ${daily.seed} · C — играть`, cx, 62, {
+      scale: 2,
+      align: 'center',
+      color: C.dim,
+    });
+  }
   const { list, selected, cleared } = campaign;
   const location = list[selected];
   const open = selected === 0 || cleared.has(list[selected - 1].id);

@@ -39,12 +39,20 @@ export function drawSummaryScreen(ctx, canvas, summary) {
 
   const { victory } = summary;
   if (victory) {
-    drawText(ctx, summary.next ? 'ЛОКАЦИЯ ПРОЙДЕНА' : 'КАМПАНИЯ ПРОЙДЕНА', cx, 28, { scale: 5, align: 'center', color: C.record });
+    const title = summary.challenge ? 'ИСПЫТАНИЕ ПРОЙДЕНО' : summary.next ? 'ЛОКАЦИЯ ПРОЙДЕНА' : 'КАМПАНИЯ ПРОЙДЕНА';
+    drawText(ctx, title, cx, 28, { scale: 5, align: 'center', color: C.record });
   } else {
     drawText(ctx, 'ВЫ ПОГИБЛИ', cx, 28, { scale: 5, align: 'center', color: C.danger });
   }
 
-  if (victory && result.beaten.size === 0) {
+  if (summary.challenge) {
+    // Испытание — отдельный зачёт: личный рекорд в нём не ведётся.
+    drawText(ctx, `Испытание дня · ${summary.challenge.date} · ${summary.location.title}`, cx, 80, {
+      scale: SCALE,
+      align: 'center',
+      color: C.dim,
+    });
+  } else if (victory && result.beaten.size === 0) {
     drawText(ctx, `${summary.location.title}: босс повержен`, cx, 80, {
       scale: SCALE,
       align: 'center',

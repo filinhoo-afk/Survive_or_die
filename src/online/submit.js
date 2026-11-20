@@ -41,15 +41,22 @@ function clampInt(value, [min, max]) {
 
 /**
  * PostgREST так отвечает, когда в запросе есть колонка, которой нет в таблице:
- * миграция 003_nickname.sql ещё не применена.
+ * не применена миграция 003_nickname.sql (колонка `nick`) или 004_daily.sql (`daily`).
  */
 const UNKNOWN_COLUMN = 'PGRST204';
+
+/** Имя колонки из ответа «Could not find the 'x' column of 'scores'»; null, если не нашлось. */
+function missingColumn(result) {
+  const match = /'([a-z_]+)' column/.exec(result.data?.message ?? '');
+  return match ? match[1] : null;
+}
 
 /**
  * Строка таблицы `scores` по итогам забега. Ник кладётся, только если он
  * допустим: безымянные результаты уходят как раньше, без поля `nick`.
+ * Результат испытания дня несёт ещё и дату — по ней он попадает в свою таблицу.
  */
-export function buildScoreRow({ stats, locationId, heroId, victory, nick }) {
+export function buildScoreRow({ stats, locationId, heroId, victory, nick, daily }) {
   const row = {
     location: locationId,
     hero: heroId,
@@ -60,20 +67,22 @@ export function buildScoreRow({ stats, locationId, heroId, victory, nick }) {
     victory: Boolean(victory),
   };
   if (isValidNick(nick)) row.nick = nick;
+  if (daily) row.daily = daily;
   return row;
 }
 
 /**
  * Отправляет забег и возвращает состояние для экрана итогов.
  * Если сервер ещё не знает колонку `nick`, результат уходит без имени:
- * рекорд важнее подписи.
+ * рекорд важнее подписи. Колонку `daily` так не отбросить: без неё результат
+ * испытания лёг бы в обычную таблицу локации, поэтому он просто не уходит.
  * @returns {Promise<string>} одно из значений SUBMIT
  */
 export async function submitScore(backend, run) {
   if (!backend.configured) return SUBMIT.off;
   const row = buildScoreRow(run);
   let result = await backend.request('POST', '', row, { Prefer: 'return=minimal' });
-  if (!result.ok && result.error === UNKNOWN_COLUMN && 'nick' in row) {
+  if (!result.ok && result.error === UNKNOWN_COLUMN && 'nick' in row && missingColumn(result) !== 'daily') {
     delete row.nick;
     result = await backend.request('POST', '', row, { Prefer: 'return=minimal' });
   }

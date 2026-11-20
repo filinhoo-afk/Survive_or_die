@@ -49,7 +49,7 @@ import { drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
 import { createTransition } from './ui/transition.js';
 import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
-import { DEFAULT_LOCATION, LOCATION_LIST } from './locations/index.js';
+import { DEFAULT_LOCATION, LOCATIONS, LOCATION_LIST } from './locations/index.js';
 import { bakeGround } from './gfx/ground.js';
 import { createLighting } from './gfx/lighting.js';
 import { createBlizzard } from './gfx/blizzard.js';
@@ -64,10 +64,12 @@ import { SETTINGS_ROWS, drawSettingsScreen, settingsBarValue, settingsRowAt } fr
 import { effectPool } from './systems/effects.js';
 import { ONLINE, createBackend } from './online/backend.js';
 import { SUBMIT, submitScore } from './online/submit.js';
-import { fetchTop } from './online/leaderboard.js';
+import { fetchDaily, fetchTop } from './online/leaderboard.js';
 import { drawLeaderboardScreen } from './ui/leaderboardScreen.js';
 import { NICK_MAX, loadNick, saveNick, typeChar } from './systems/nickname.js';
 import { drawNicknameScreen } from './ui/nicknameScreen.js';
+import { dailyChallenge, todayUtc } from './systems/daily.js';
+import { seedLabel, seedRun, unseedRun } from './systems/rng.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -225,7 +227,7 @@ function captureNickname(event) {
 }
 
 /** Геймпад листает меню как клавиатура: кнопки превращаются в коды клавиш. */
-const PAD_MENU_KEYS = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', a: 'Enter', b: 'Escape', lb: 'KeyO' };
+const PAD_MENU_KEYS = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', a: 'Enter', b: 'Escape', lb: 'KeyO', rb: 'KeyC' };
 const PAD_CARD_KEYS = { a: 'Digit1', b: 'Digit2', x: 'Digit3' };
 
 function padKey(button) {
@@ -239,6 +241,7 @@ function padKey(button) {
   // Пока ждём клавишу для переназначения, геймпад только отменяет.
   if (rebinding) return button === 'b' ? 'Escape' : null;
   if (button === 'lb' && mode !== 'menu' && mode !== 'paused') return null;
+  if (button === 'rb' && mode !== 'menu' && mode !== 'leaderboard') return null;
   return PAD_MENU_KEYS[button] ?? null;
 }
 
@@ -274,11 +277,29 @@ let heroIndex = loadHeroIndex();
 /** Режим игры: меню, магазин, забег или пауза (поражение — это !player.alive). */
 let mode = 'menu';
 
+/**
+ * Испытание дня, если идёт оно: { date, seed, locationId, heroId }. У обычного
+ * забега null. Пока оно идёт, локация и герой навязаны сидом дня, закрытые
+ * локации открыты, а постоянные улучшения из магазина не действуют.
+ */
+let challenge = null;
+/** Локация, выбранная в меню до испытания: после него меню возвращается к ней. */
+let menuLocation = null;
+
+/** Герой текущего забега: навязанный испытанием или выбранный в меню. */
+function runHero() {
+  return challenge ? HEROES.find((h) => h.id === challenge.heroId) : HEROES[heroIndex];
+}
+
 /** Собирает мир с нуля — и для первого запуска, и для рестарта. */
 function newRun() {
+  // Сид включается до расстановки ящиков и первой волны: мир испытания у всех один.
+  if (challenge) seedRun(challenge.seed);
+  else unseedRun();
+  const hero = runHero();
   player = new Player(world.width / 2, world.height / 2);
-  applyHero(HEROES[heroIndex], player);
-  applyMeta(meta, player);
+  applyHero(hero, player);
+  if (!challenge) applyMeta(meta, player);
   camera = new Camera(canvas.width, canvas.height, world, CONFIG.camera.smoothing);
   enemies = [];
   boss = null;
@@ -293,7 +314,7 @@ function newRun() {
   pickups = [];
   spawner = new Spawner(world, location.enemies);
   arsenal = new Arsenal();
-  arsenal.add(HEROES[heroIndex].weapon);
+  arsenal.add(hero.weapon);
   effects?.clear();
   effects = new Effects();
   setHitListener((enemy, amount, crit) => {
@@ -398,8 +419,14 @@ function shiftHero(step) {
 
 /** Из меню в забег; закрытая локация не стартует. */
 function startFromMenu() {
-  if (locationOpen()) startRunFaded();
+  if (locationOpen()) startRunFaded(null);
   else audio.play('hit');
+}
+
+/** Испытание дня: сегодняшний сид, локация и герой. Доступно всегда. */
+function startDaily() {
+  audio.play('pick');
+  startRunFaded(dailyChallenge(todayUtc()));
 }
 
 /** Покупка в магазине: звук подтверждает или отказывает. */
@@ -409,19 +436,37 @@ function buyUpgrade(index) {
   audio.play(next ? 'pick' : 'hit');
 }
 
-function startRun() {
+/** next — испытание дня или null для обычного забега. */
+function startRun(next = null) {
+  if (next && !challenge) menuLocation = location;
+  challenge = next;
+  if (challenge) setLocation(LOCATIONS[challenge.locationId]);
   newRun();
   mode = 'playing';
   audio.play('start');
 }
 
-/** Старт забега и выход в меню идут через затемнение. */
-function startRunFaded() {
-  transition.go(startRun);
+/**
+ * Старт забега и выход в меню идут через затемнение. Без аргумента — заново
+ * то же самое: рестарт испытания остаётся испытанием, обычного забега — обычным.
+ */
+function startRunFaded(next = challenge) {
+  transition.go(() => startRun(next));
+}
+
+/** После испытания меню снова показывает ту локацию, что была выбрана до него. */
+function leaveChallenge() {
+  if (!challenge) return;
+  challenge = null;
+  if (menuLocation) setLocation(menuLocation);
+  menuLocation = null;
+  newRun();
 }
 
 /** Следующая локация кампании или undefined, если дальше пока нет. */
 function nextLocation() {
+  // У испытания дня «дальше» нет: оно одно на день.
+  if (challenge) return undefined;
   return LOCATION_LIST[LOCATION_LIST.indexOf(location) + 1];
 }
 
@@ -439,7 +484,10 @@ function continueFaded() {
 }
 
 function menuFaded() {
-  transition.go(() => setMode('menu'));
+  transition.go(() => {
+    leaveChallenge();
+    setMode('menu');
+  });
 }
 
 function setMode(next) {
@@ -491,8 +539,9 @@ function onKey(event) {
 
   if (mode === 'leaderboard') {
     if (event.code === 'Escape' || event.code === 'KeyT') mode = 'menu';
+    else if (event.code === 'KeyC') toggleDailyBoard();
     else if (event.code in MENU_SHIFT) shiftBoard(MENU_SHIFT[event.code]);
-    else if (event.code === 'KeyR') loadBoard(LOCATION_LIST[boardIndex].id, true);
+    else if (event.code === 'KeyR') loadBoard(currentBoardKey(), true);
     return;
   }
 
@@ -510,6 +559,7 @@ function onKey(event) {
     if (event.code === 'KeyB') mode = 'shop';
     else if (event.code === 'KeyO') openSettings();
     else if (event.code === 'KeyT') openBoard();
+    else if (event.code === 'KeyC') startDaily();
     else if (event.code === 'KeyI') openNickname();
     else if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
@@ -658,30 +708,49 @@ backend.check().then((state) => {
   online = state;
 });
 
-/** Таблица рекордов: топ каждой локации загружается при первом показе и по R. */
+/**
+ * Таблица рекордов: топ каждой локации и топ испытания дня. Загружаются при
+ * первом показе и по R; ключ — id локации или `daily:ДАТА`.
+ */
 const heroTitles = new Map(HEROES.map((h) => [h.id, h.title]));
 const boards = new Map();
 let boardIndex = 0;
+/** Показана таблица испытания дня, а не локации. */
+let boardDaily = false;
 
-function loadBoard(locationId, force = false) {
-  if (!force && boards.get(locationId)?.status === 'ok') return;
-  if (boards.get(locationId)?.status === 'loading') return;
-  boards.set(locationId, { status: 'loading' });
-  fetchTop(backend, locationId).then((result) => {
-    boards.set(locationId, result.ok ? { status: 'ok', rows: result.rows } : { status: 'error' });
+function currentBoardKey() {
+  return boardDaily ? `daily:${todayUtc()}` : LOCATION_LIST[boardIndex].id;
+}
+
+function loadBoard(key, force = false) {
+  if (!force && boards.get(key)?.status === 'ok') return;
+  if (boards.get(key)?.status === 'loading') return;
+  boards.set(key, { status: 'loading' });
+  const request = key.startsWith('daily:') ? fetchDaily(backend, key.slice('daily:'.length)) : fetchTop(backend, key);
+  request.then((result) => {
+    boards.set(key, result.ok ? { status: 'ok', rows: result.rows } : { status: 'error' });
   });
 }
 
 function openBoard() {
   boardIndex = Math.max(0, LOCATION_LIST.indexOf(location));
-  loadBoard(LOCATION_LIST[boardIndex].id);
+  boardDaily = false;
+  loadBoard(currentBoardKey());
   mode = 'leaderboard';
   audio.play('pick');
 }
 
 function shiftBoard(step) {
+  if (boardDaily) return;
   boardIndex = (boardIndex + step + LOCATION_LIST.length) % LOCATION_LIST.length;
-  loadBoard(LOCATION_LIST[boardIndex].id);
+  loadBoard(currentBoardKey());
+  audio.play('pick');
+}
+
+/** C на экране рекордов: переключает таблицу локации и таблицу испытания дня. */
+function toggleDailyBoard() {
+  boardDaily = !boardDaily;
+  loadBoard(currentBoardKey());
   audio.play('pick');
 }
 
@@ -697,8 +766,11 @@ function finishRun(victory = false) {
     killsByType,
     build: upgrades.summary(),
   };
-  if (victory) cleared = markCleared(cleared, location.id);
-  const result = submitRun(stats);
+  const hero = runHero();
+  const daily = challenge;
+  // Испытание не открывает локации и не трогает личный рекорд: это отдельный зачёт.
+  if (victory && !daily) cleared = markCleared(cleared, location.id);
+  const result = daily ? { previous: record, record, beaten: new Set() } : submitRun(stats);
   record = result.record;
   const gold = runGold(meta, stats, victory);
   meta = addGold(meta, gold);
@@ -709,12 +781,22 @@ function finishRun(victory = false) {
     location,
     gold,
     next: victory ? nextLocation() : undefined,
+    challenge: daily,
     submit: backend.configured ? SUBMIT.sending : SUBMIT.off,
   };
   // Отправка идёт в фоне; экран итогов сам перерисует итог, когда он придёт.
   const shown = summary;
-  submitScore(backend, { stats, locationId: location.id, heroId: HEROES[heroIndex].id, victory, nick }).then((state) => {
+  submitScore(backend, {
+    stats,
+    locationId: location.id,
+    heroId: hero.id,
+    victory,
+    nick,
+    daily: daily?.date,
+  }).then((state) => {
     shown.submit = state;
+    // Новый результат должен попасть в таблицу дня при следующем открытии.
+    if (daily && state === SUBMIT.sent) boards.delete(`daily:${daily.date}`);
   });
   if (victory) audio.play('levelUp');
   else if (result.beaten.size > 0) audio.play('record');
@@ -901,8 +983,22 @@ function render() {
     drawShopScreen(ctx, canvas, meta, shopSelected);
   } else if (mode === 'leaderboard') {
     drawMenu();
-    const board = LOCATION_LIST[boardIndex];
-    drawLeaderboardScreen(ctx, canvas, board, boardIndex, LOCATION_LIST.length, boards.get(board.id), heroTitles, online);
+    if (boardDaily) {
+      const today = dailyChallenge(todayUtc());
+      const place = LOCATIONS[today.locationId];
+      const heroTitle = heroTitles.get(today.heroId) ?? today.heroId;
+      drawLeaderboardScreen(ctx, canvas, {
+        title: 'ИСПЫТАНИЕ ДНЯ',
+        daily: true,
+        subtitle: `${today.date} · ${place.title} · ${heroTitle}`,
+      }, boards.get(currentBoardKey()), heroTitles, online);
+    } else {
+      const board = LOCATION_LIST[boardIndex];
+      drawLeaderboardScreen(ctx, canvas, {
+        title: 'РЕКОРДЫ',
+        subtitle: `${board.title}  ${boardIndex + 1}/${LOCATION_LIST.length}`,
+      }, boards.get(board.id), heroTitles, online);
+    }
   } else if (mode === 'nick') {
     drawMenu();
     drawNicknameScreen(ctx, canvas, nickDraft, nickNotice);
@@ -1005,6 +1101,15 @@ function drawHud() {
   } else if (location.duration !== null) {
     const left = Math.max(0, location.duration - elapsed);
     drawText(ctx, `БОСС ЧЕРЕЗ ${formatTime(left)}`, canvas.width / 2, 52, {
+      scale: 2,
+      align: 'center',
+      color: colors.hudDim,
+      shadow: colors.hudShadow,
+    });
+  }
+
+  if (challenge) {
+    drawText(ctx, `ИСПЫТАНИЕ ДНЯ · ${challenge.date}`, canvas.width / 2, 74, {
       scale: 2,
       align: 'center',
       color: colors.hudDim,
@@ -1122,12 +1227,28 @@ function drawStats() {
   }
 }
 
+/** Испытание на сегодня для строки в меню: дата, сид, где и за кого. Считается раз в сутки. */
+let dailyShown = null;
+function dailyInfo() {
+  const date = todayUtc();
+  if (dailyShown?.date !== date) {
+    const today = dailyChallenge(date);
+    dailyShown = {
+      date,
+      seed: seedLabel(today.seed),
+      location: LOCATIONS[today.locationId].title.toUpperCase(),
+      hero: (heroTitles.get(today.heroId) ?? today.heroId).toUpperCase(),
+    };
+  }
+  return dailyShown;
+}
+
 function drawMenu() {
   drawMenuScreen(ctx, canvas, record, {
     list: LOCATION_LIST,
     selected: LOCATION_LIST.indexOf(location),
     cleared,
-  }, meta.gold, HEROES[heroIndex], online, nick);
+  }, meta.gold, HEROES[heroIndex], online, nick, dailyInfo());
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

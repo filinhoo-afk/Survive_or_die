@@ -1,6 +1,7 @@
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
 import { spawnEnemyShot } from './enemyShot.js';
+import { random } from '../systems/rng.js';
 
 /**
  * Фазы червя; вторая включается ниже `until` доли здоровья.
@@ -151,8 +152,8 @@ export class IceWorm extends Enemy {
     main.main = true;
 
     for (let i = 0; i < phase.spikes; i += 1) {
-      const angle = Math.random() * Math.PI * 2;
-      const reach = 70 + Math.random() * SPIKE_REACH;
+      const angle = random() * Math.PI * 2;
+      const reach = 70 + random() * SPIKE_REACH;
       this.markStrike(
         target.x + Math.cos(angle) * reach,
         target.y + Math.sin(angle) * reach,

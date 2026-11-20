@@ -1,5 +1,6 @@
 import { Crate } from '../entities/crate.js';
 import { Pickup } from '../entities/pickup.js';
+import { random } from './rng.js';
 
 const CRATE_COUNT = 16;
 const BOMB_DAMAGE = 80;
@@ -17,7 +18,7 @@ const CRATE_LOOT = [
 
 function rollLoot(table) {
   const total = table.reduce((sum, [, w]) => sum + w, 0);
-  let left = Math.random() * total;
+  let left = random() * total;
   for (const [kind, weight] of table) {
     left -= weight;
     if (left < 0) return kind;
@@ -29,8 +30,8 @@ function rollLoot(table) {
 export function buildCrates(world, obstacles) {
   const crates = [];
   for (let attempt = 0; attempt < CRATE_COUNT * 30 && crates.length < CRATE_COUNT; attempt += 1) {
-    const x = 120 + Math.random() * (world.width - 240);
-    const y = 120 + Math.random() * (world.height - 240);
+    const x = 120 + random() * (world.width - 240);
+    const y = 120 + random() * (world.height - 240);
     if (Math.hypot(x - world.width / 2, y - world.height / 2) < 220) continue;
     if (obstacles.some((o) => Math.hypot(o.x - x, o.y - y) < o.radius + 40)) continue;
     if (crates.some((c) => Math.hypot(c.x - x, c.y - y) < 120)) continue;
@@ -75,7 +76,7 @@ export function crateLoot() {
 
 /** Иногда предмет выпадает и из врага. */
 export function enemyDrop() {
-  return Math.random() < ENEMY_DROP ? rollLoot(CRATE_LOOT.filter(([k]) => k !== 'gem')) : null;
+  return random() < ENEMY_DROP ? rollLoot(CRATE_LOOT.filter(([k]) => k !== 'gem')) : null;
 }
 
 /** Награда «богатой» элиты: всегда предмет. */

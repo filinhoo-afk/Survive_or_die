@@ -2,6 +2,7 @@ import { CONFIG } from '../config.js';
 import { Enemy } from '../entities/enemy.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { eliteChance, rollModifier } from '../enemies/elites.js';
+import { random } from './rng.js';
 
 /** Разброс стаи вокруг точки появления, пикселей. */
 const PACK_SPREAD = 28;
@@ -79,12 +80,12 @@ export class Spawner {
       // Стая появляется кучкой вокруг одной точки, а не цепочкой по краю.
       for (let k = 0; k < type.pack; k += 1) {
         if (enemies.length >= this.maxEnemies) break;
-        const angle = Math.random() * Math.PI * 2;
-        const offset = k === 0 ? 0 : Math.random() * PACK_SPREAD;
+        const angle = random('spawn') * Math.PI * 2;
+        const offset = k === 0 ? 0 : random('spawn') * PACK_SPREAD;
         const x = clamp(point.x + Math.cos(angle) * offset, inset, this.world.width - inset);
         const y = clamp(point.y + Math.sin(angle) * offset, inset, this.world.height - inset);
         // Элитой становится только одиночка: из стаи роя элита не нужна.
-        const elite = type.pack === 1 && Math.random() < eliteChance(this.time);
+        const elite = type.pack === 1 && random('spawn') < eliteChance(this.time);
         enemies.push(new Enemy(x, y, type, this.hpScale, elite ? rollModifier() : null));
         spawned += 1;
       }
@@ -100,7 +101,7 @@ export class Spawner {
   pickType() {
     const open = this.types.filter((type) => type.from <= this.time);
     const total = open.reduce((sum, type) => sum + type.weight, 0);
-    let ticket = Math.random() * total;
+    let ticket = random('spawn') * total;
 
     for (const type of open) {
       if (ticket < type.weight) return type;
@@ -133,7 +134,7 @@ export class Spawner {
     let last = null;
 
     for (let attempt = 0; attempt < 16; attempt += 1) {
-      const point = pointOnPerimeter(Math.random() * perimeter, left, top, width, height);
+      const point = pointOnPerimeter(random('spawn') * perimeter, left, top, width, height);
 
       if (
         point.x >= inset &&

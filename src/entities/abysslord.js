@@ -1,6 +1,7 @@
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
 import { spawnEnemyShot } from './enemyShot.js';
+import { random } from '../systems/rng.js';
 
 /**
  * Три фазы Владыки; следующая включается, когда доля здоровья упала до `until`.
@@ -216,7 +217,7 @@ export class AbyssLord extends Enemy {
   /** Прыжок на `distance` от игрока в случайную сторону; на новом месте он зовёт свиту. */
   teleport(target, shots, enemies) {
     const { teleport } = this.phase;
-    const angle = Math.random() * Math.PI * 2;
+    const angle = random() * Math.PI * 2;
     this.x = this.inWorldX(target.x + Math.cos(angle) * teleport.distance);
     this.y = this.inWorldY(target.y + Math.sin(angle) * teleport.distance);
     this.appearLeft = APPEAR_TIME;
@@ -236,7 +237,7 @@ export class AbyssLord extends Enemy {
   summon(enemies) {
     const { summon } = this.phase;
     if (!summon || !enemies || enemies.length >= MAX_ENEMIES) return;
-    const start = Math.random() * Math.PI * 2;
+    const start = random() * Math.PI * 2;
     for (let i = 0; i < summon.count; i += 1) {
       const angle = start + (i / summon.count) * Math.PI * 2;
       enemies.push(
@@ -255,8 +256,8 @@ export class AbyssLord extends Enemy {
     const { rifts } = this.phase;
     this.riftCooldown = rifts.cooldown;
     for (let i = 0; i < rifts.count; i += 1) {
-      const angle = Math.random() * Math.PI * 2;
-      const reach = i === 0 ? 0 : 60 + Math.random() * RIFT_REACH;
+      const angle = random() * Math.PI * 2;
+      const reach = i === 0 ? 0 : 60 + random() * RIFT_REACH;
       const margin = rifts.radius * 0.5;
       const left = rifts.telegraph + i * RIFT_DELAY;
       this.strikes.push({

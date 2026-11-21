@@ -26,6 +26,18 @@ const ONLINE_LINES = {
 };
 
 /**
+ * Место в рейтинге в левом верхнем углу. Пока сервер считает — тусклая строка,
+ * не получилось — строки нет. Лучшая десятка и первое место подсвечены.
+ */
+export function rankLine(rank) {
+  if (!rank || rank.status === 'error') return null;
+  if (rank.status === 'loading') return { text: 'Место в рейтинге...', color: C.dim };
+  const label = rank.daily ? 'Место дня' : 'Место';
+  const text = `${label}: ${formatNumber(rank.place)} из ${formatNumber(rank.total)}`;
+  return { text, color: rank.place <= 10 ? C.record : C.text };
+}
+
+/**
  * Экран итогов забега: показатели против рекорда, кого и сколько убили,
  * с какой сборкой. summary — то, что собрал main.js в момент смерти.
  */
@@ -107,6 +119,9 @@ export function drawSummaryScreen(ctx, canvas, summary) {
 
   const online = ONLINE_LINES[summary.submit];
   if (online) drawText(ctx, online.text, canvas.width - 16, 16, { scale: SCALE, align: 'right', color: online.color });
+
+  const rank = rankLine(summary.rank);
+  if (rank) drawText(ctx, rank.text, 16, 16, { scale: SCALE, color: rank.color });
 
   if (summary.gold > 0) {
     drawText(ctx, `+${formatNumber(summary.gold)} золота`, cx, canvas.height - 62, {

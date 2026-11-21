@@ -59,7 +59,7 @@ export function createBackend(options = CONFIG.online, fetchImpl = (...args) => 
       if (!response.ok) {
         return { ok: false, status: response.status, error: data?.code ?? `http-${response.status}`, data };
       }
-      return { ok: true, status: response.status, data };
+      return { ok: true, status: response.status, data, range: response.headers?.get?.('content-range') ?? null };
     } catch (error) {
       return { ok: false, status: 0, error: error?.name === 'AbortError' ? 'timeout' : 'network' };
     } finally {
@@ -77,10 +77,25 @@ export function createBackend(options = CONFIG.online, fetchImpl = (...args) => 
     return send(`rpc/${name}`, 'POST', '', args);
   }
 
+  /**
+   * Сколько строк подходит под фильтр. Сами строки не качаются: сервер считает
+   * их и пишет итог в заголовок Content-Range («0-0/123»).
+   * @returns {Promise<{ ok: true, count: number } | { ok: false, status: number, error: string }>}
+   */
+  async function count(query = '') {
+    const result = await send(TABLE, 'GET', `${query ? `${query}&` : ''}select=id&limit=1`, undefined, {
+      Prefer: 'count=exact',
+    });
+    if (!result.ok) return result;
+    const total = Number(/\/(\d+)$/.exec(result.range ?? '')?.[1]);
+    return Number.isFinite(total) ? { ok: true, count: total } : { ok: false, status: result.status, error: 'no-count' };
+  }
+
   return {
     configured,
     request,
     rpc,
+    count,
     /** Есть ли связь и видна ли таблица: читает одну строку. */
     async check() {
       if (!configured) return ONLINE.off;

@@ -65,6 +65,7 @@ import { effectPool } from './systems/effects.js';
 import { ONLINE, createBackend } from './online/backend.js';
 import { SUBMIT, submitScore } from './online/submit.js';
 import { fetchDaily, fetchTop } from './online/leaderboard.js';
+import { fetchRank } from './online/rank.js';
 import { drawLeaderboardScreen } from './ui/leaderboardScreen.js';
 import { NICK_MAX, loadNick, saveNick, typeChar } from './systems/nickname.js';
 import { drawNicknameScreen } from './ui/nicknameScreen.js';
@@ -786,17 +787,24 @@ function finishRun(victory = false) {
   };
   // Отправка идёт в фоне; экран итогов сам перерисует итог, когда он придёт.
   const shown = summary;
-  submitScore(backend, {
+  const run = {
     stats,
     locationId: location.id,
     heroId: hero.id,
     victory,
     nick,
     daily: daily?.date,
-  }).then((state) => {
+  };
+  submitScore(backend, run).then((state) => {
     shown.submit = state;
-    // Новый результат должен попасть в таблицу дня при следующем открытии.
-    if (daily && state === SUBMIT.sent) boards.delete(`daily:${daily.date}`);
+    if (state !== SUBMIT.sent) return;
+    // Новый результат должен попасть в таблицы при следующем открытии.
+    boards.delete(daily ? `daily:${daily.date}` : run.locationId);
+    // Место в рейтинге спрашиваем только про принятый сервером результат.
+    shown.rank = { status: 'loading' };
+    fetchRank(backend, run).then((rank) => {
+      shown.rank = rank.ok ? { status: 'ok', ...rank } : { status: 'error' };
+    });
   });
   if (victory) audio.play('levelUp');
   else if (result.beaten.size > 0) audio.play('record');

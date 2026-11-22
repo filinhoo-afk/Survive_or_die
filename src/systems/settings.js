@@ -88,7 +88,9 @@ export function saveSettings(settings) {
 /**
  * Назначает клавишу действию как основную. Если она уже стояла на другом
  * действии, оттуда она снимается; прежняя основная клавиша уходит в запасную.
- * Возвращает новые настройки или null, если клавиша зарезервирована.
+ * Возвращает новые настройки или null, если клавиша зарезервирована или
+ * это последняя клавиша другого действия, а вернуть ему нечего: клавиши по
+ * умолчанию заняты, и делить одну клавишу на два движения нельзя.
  */
 export function rebind(settings, action, code) {
   if (RESERVED_KEYS.has(code)) return null;
@@ -98,9 +100,16 @@ export function rebind(settings, action, code) {
   }
   const old = settings.bindings[action][0];
   bindings[action] = [code, old && old !== code ? old : bindings[action][1]];
-  // У остальных действий не должно остаться пустых мест вместо единственной клавиши.
+  // У остальных действий не должно остаться пустых мест вместо единственной клавиши:
+  // возвращаем клавиши по умолчанию, но только свободные — иначе одна клавиша
+  // двигала бы героя сразу в две стороны.
+  const taken = (key, except) =>
+    Object.entries(bindings).some(([id, slots]) => id !== except && slots.includes(key));
   for (const { id } of BINDING_ACTIONS) {
-    if (!bindings[id][0] && !bindings[id][1]) bindings[id] = [...DEFAULT_BINDINGS[id]];
+    if (bindings[id][0] || bindings[id][1]) continue;
+    const free = DEFAULT_BINDINGS[id].filter((key) => !taken(key, id));
+    if (free.length === 0) return null;
+    bindings[id] = [free[0], free[1] ?? null];
   }
   return { ...settings, bindings };
 }

@@ -1,0 +1,12 @@
+{
+  "name": "survive-or-die",
+  "private": true,
+  "type": "module",
+  "description": "Аркадная игра на выживание в браузере. Сборки нет: package.json нужен только для тестов.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

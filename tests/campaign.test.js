@@ -21,8 +21,8 @@ describe('кампания', () => {
   });
 
   test('повторное прохождение ничего не дублирует', () => {
-    let cleared = markCleared(new Set(), 'forest');
-    cleared = markCleared(cleared, 'forest');
+    const once = markCleared(new Set(), 'forest');
+    markCleared(once, 'forest');
     assert.deepEqual(readSave().cleared, ['forest']);
   });
 

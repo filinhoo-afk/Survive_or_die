@@ -2,11 +2,18 @@
   "name": "survive-or-die",
   "private": true,
   "type": "module",
-  "description": "Аркадная игра на выживание в браузере. Сборки нет: package.json нужен только для тестов.",
+  "description": "Аркадная игра на выживание в браузере. Сборки нет: package.json нужен только для тестов и линтера.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint .",
+    "check": "npm run lint && npm test"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0"
   }
 }

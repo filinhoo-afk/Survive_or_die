@@ -23,7 +23,8 @@ describe('formatNumber', () => {
   test('разряды разделены обычными пробелами — другого пробела в пиксельном шрифте нет', () => {
     assert.equal(formatNumber(1234567), '1 234 567');
     assert.equal(formatNumber(999), '999');
-    assert.ok(!/[  ]/.test(formatNumber(1234567)));
+    // Неразрывный (U+00A0) и узкий неразрывный (U+202F) пробелы, которые ставит toLocaleString.
+    assert.ok(!/[\u00a0\u202f]/.test(formatNumber(1234567)));
   });
 
   test('округляет до целого', () => {

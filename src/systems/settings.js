@@ -8,10 +8,10 @@ import { patchSave, readSave } from './save.js';
 
 /** Действия движения, которые можно переназначить; на каждое — две клавиши. */
 export const BINDING_ACTIONS = [
-  { id: 'up', title: 'Вверх' },
-  { id: 'down', title: 'Вниз' },
-  { id: 'left', title: 'Влево' },
-  { id: 'right', title: 'Вправо' },
+  { id: 'up' },
+  { id: 'down' },
+  { id: 'left' },
+  { id: 'right' },
 ];
 
 export const DEFAULT_BINDINGS = {
@@ -30,9 +30,9 @@ export const RESERVED_KEYS = new Set([
 /** Громкость идёт шагами по 10 %, чтобы значения на экране и в файле совпадали. */
 export const VOLUME_STEPS = 10;
 export const VOLUME_CHANNELS = [
-  { id: 'master', title: 'Общая' },
-  { id: 'music', title: 'Музыка' },
-  { id: 'sfx', title: 'Эффекты' },
+  { id: 'master' },
+  { id: 'music' },
+  { id: 'sfx' },
 ];
 
 export function defaultSettings() {

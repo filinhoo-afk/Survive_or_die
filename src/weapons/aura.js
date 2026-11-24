@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { localize, localizeLevels } from '../i18n/index.js';
 
 /**
  * Аура: раз в cooldown бьёт всех врагов в радиусе вокруг игрока.
@@ -6,8 +7,6 @@ import { CONFIG } from '../config.js';
  */
 export const aura = {
   id: 'aura',
-  title: 'Аура',
-  description: 'Жжёт всех врагов вокруг тебя',
   color: '#7ee787',
   icon: 'aura',
   layer: 'under',
@@ -20,17 +19,16 @@ export const aura = {
     knockback: 0.25,
   },
   levels: [
-    { text: 'Радиус +20%', show: 'radius', apply: (s) => { s.radius *= 1.2; } },
-    { text: 'Урон +50%', show: 'damage', apply: (s) => { s.damage *= 1.5; } },
+    { show: 'radius', apply: (s) => { s.radius *= 1.2; } },
+    { show: 'damage', apply: (s) => { s.damage *= 1.5; } },
     {
-      text: 'Радиус +20%, импульсы на 25% чаще',
       show: 'radius',
       apply: (s) => {
         s.radius *= 1.2;
         s.cooldown *= 0.75;
       },
     },
-    { text: 'Урон +50%', show: 'damage', apply: (s) => { s.damage *= 1.5; } },
+    { show: 'damage', apply: (s) => { s.damage *= 1.5; } },
   ],
 
   createState: () => ({ pulse: 0, time: 0 }),
@@ -88,3 +86,6 @@ export const aura = {
     ctx.restore();
   },
 };
+
+localize(aura, 'weapon.aura', ['title', 'description']);
+localizeLevels(aura, 'weapon.aura');

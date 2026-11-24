@@ -1,4 +1,5 @@
 import { drawText } from '../gfx/font.js';
+import { LANGUAGES, getLanguage, t } from '../i18n/index.js';
 import {
   BINDING_ACTIONS,
   VOLUME_CHANNELS,
@@ -7,19 +8,20 @@ import {
 } from '../systems/settings.js';
 import { UI_COLORS as C, pixelPanel } from './panel.js';
 
-const ROW_HEIGHT = 38;
+const ROW_HEIGHT = 34;
 const ROW_WIDTH = 640;
 const ROW_GAP = 6;
-const TOP = 92;
+const TOP = 84;
 const BAR_OFFSET = 250;
 const SEGMENT = 24;
 const SEGMENT_GAP = 4;
 
-/** Строки: громкости, затем клавиши, затем сброс. */
+/** Строки: громкости, клавиши, язык и сброс. Названия берутся из словаря по `titleKey`. */
 export const SETTINGS_ROWS = [
-  ...VOLUME_CHANNELS.map((c) => ({ kind: 'volume', id: c.id, title: c.title })),
-  ...BINDING_ACTIONS.map((a) => ({ kind: 'key', id: a.id, title: a.title })),
-  { kind: 'reset', id: 'reset', title: 'Сбросить настройки' },
+  ...VOLUME_CHANNELS.map((c) => ({ kind: 'volume', id: c.id, titleKey: `settings.volume.${c.id}` })),
+  ...BINDING_ACTIONS.map((a) => ({ kind: 'key', id: a.id, titleKey: `settings.key.${a.id}` })),
+  { kind: 'language', id: 'language', titleKey: 'settings.language' },
+  { kind: 'reset', id: 'reset', titleKey: 'settings.reset' },
 ];
 
 const rowTop = (index) => TOP + index * (ROW_HEIGHT + ROW_GAP);
@@ -54,7 +56,7 @@ export function drawSettingsScreen(ctx, canvas, settings, selected, rebinding, n
   const left = rowLeft(canvas);
   const blinkOn = Math.floor(performance.now() / 400) % 2 === 0;
 
-  drawText(ctx, 'НАСТРОЙКИ', cx, 30, { scale: 5, align: 'center', color: C.title });
+  drawText(ctx, t('settings.title'), cx, 30, { scale: 5, align: 'center', color: C.title });
 
   SETTINGS_ROWS.forEach((row, i) => {
     const top = rowTop(i);
@@ -63,8 +65,8 @@ export function drawSettingsScreen(ctx, canvas, settings, selected, rebinding, n
     const border = waiting ? C.record : isSelected ? C.title : C.border;
     pixelPanel(ctx, left, top, ROW_WIDTH, ROW_HEIGHT, isSelected ? C.panelHover : C.panel, border);
 
-    const textY = top + 11;
-    drawText(ctx, row.title, left + 20, textY, {
+    const textY = top + Math.round((ROW_HEIGHT - 14) / 2);
+    drawText(ctx, t(row.titleKey), left + 20, textY, {
       scale: 2,
       color: row.kind === 'reset' ? C.danger : C.text,
     });
@@ -84,12 +86,19 @@ export function drawSettingsScreen(ctx, canvas, settings, selected, rebinding, n
     } else if (row.kind === 'key') {
       const [primary, secondary] = settings.bindings[row.id];
       const text = waiting
-        ? blinkOn ? 'НАЖМИТЕ КЛАВИШУ...' : ''
+        ? blinkOn ? t('settings.waiting') : ''
         : `${keyLabel(primary)}  ·  ${keyLabel(secondary)}`;
       drawText(ctx, text, left + ROW_WIDTH - 20, textY, {
         scale: 2,
         align: 'right',
         color: waiting ? C.record : C.accent,
+      });
+    } else if (row.kind === 'language') {
+      const language = LANGUAGES.find((l) => l.id === getLanguage());
+      drawText(ctx, `←  ${language.name}  →`, left + ROW_WIDTH - 20, textY, {
+        scale: 2,
+        align: 'right',
+        color: C.accent,
       });
     }
   });
@@ -99,11 +108,11 @@ export function drawSettingsScreen(ctx, canvas, settings, selected, rebinding, n
   }
 
   const hint = rebinding
-    ? 'Нажмите клавишу · Esc — отмена'
-    : 'W / S — строка · A / D — громкость · Enter — выбрать · Esc — назад';
+    ? t('settings.hint.rebind')
+    : t('settings.hint');
   drawText(ctx, hint, cx, canvas.height - 40, { scale: 2, align: 'center', color: C.dim });
   if (!rebinding) {
-    drawText(ctx, 'Геймпад: стик / крестовина, A — выбрать, B — назад', cx, canvas.height - 22, {
+    drawText(ctx, t('settings.pad'), cx, canvas.height - 22, {
       scale: 2,
       align: 'center',
       color: C.dim,

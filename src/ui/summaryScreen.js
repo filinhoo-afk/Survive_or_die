@@ -2,6 +2,7 @@ import { ENEMY_TYPE_LIST } from '../enemies/types.js';
 import { drawText, measureText, textHeight, wrapText } from '../gfx/font.js';
 import { formatNumber, formatTime } from './format.js';
 import { UI_COLORS as C, pixelPanel } from './panel.js';
+import { t } from '../i18n/index.js';
 
 const PANEL_WIDTH = 580;
 const ROW_HEIGHT = 30;
@@ -9,20 +10,20 @@ const SCALE = 2;
 
 /** Строки таблицы: показатели с рекордом и справочные без него. */
 const ROWS = [
-  { field: 'time', label: 'Продержались', format: formatTime },
-  { field: 'kills', label: 'Убийств', format: formatNumber },
-  { field: 'level', label: 'Уровень', format: String },
-  { field: 'damage', label: 'Урона нанесено', format: formatNumber },
-  { field: 'wave', label: 'Последняя волна', format: String },
-  { field: 'crits', label: 'Критических ударов', format: formatNumber },
+  { field: 'time', format: formatTime },
+  { field: 'kills', format: formatNumber },
+  { field: 'level', format: String },
+  { field: 'damage', format: formatNumber },
+  { field: 'wave', format: String },
+  { field: 'crits', format: formatNumber },
 ];
 
 /** Статус отправки в онлайн-таблицу; при выключенном бэкенде строки нет. */
 const ONLINE_LINES = {
-  sending: { text: 'Отправка рекорда...', color: C.dim },
-  sent: { text: 'Рекорд отправлен', color: C.record },
-  failed: { text: 'Рекорд не отправлен: нет связи', color: C.danger },
-  rejected: { text: 'Рекорд отклонён сервером', color: C.danger },
+  sending: { key: 'summary.online.sending', color: C.dim },
+  sent: { key: 'summary.online.sent', color: C.record },
+  failed: { key: 'summary.online.failed', color: C.danger },
+  rejected: { key: 'summary.online.rejected', color: C.danger },
 };
 
 /**
@@ -31,9 +32,11 @@ const ONLINE_LINES = {
  */
 export function rankLine(rank) {
   if (!rank || rank.status === 'error') return null;
-  if (rank.status === 'loading') return { text: 'Место в рейтинге...', color: C.dim };
-  const label = rank.daily ? 'Место дня' : 'Место';
-  const text = `${label}: ${formatNumber(rank.place)} из ${formatNumber(rank.total)}`;
+  if (rank.status === 'loading') return { text: t('summary.rank.loading'), color: C.dim };
+  const text = t(rank.daily ? 'summary.rankDaily' : 'summary.rank', {
+    place: formatNumber(rank.place),
+    total: formatNumber(rank.total),
+  });
   return { text, color: rank.place <= 10 ? C.record : C.text };
 }
 
@@ -51,21 +54,23 @@ export function drawSummaryScreen(ctx, canvas, summary) {
 
   const { victory } = summary;
   if (victory) {
-    const title = summary.challenge ? 'ИСПЫТАНИЕ ПРОЙДЕНО' : summary.next ? 'ЛОКАЦИЯ ПРОЙДЕНА' : 'КАМПАНИЯ ПРОЙДЕНА';
+    const title = t(
+      summary.challenge ? 'summary.title.challenge' : summary.next ? 'summary.title.location' : 'summary.title.campaign',
+    );
     drawText(ctx, title, cx, 28, { scale: 5, align: 'center', color: C.record });
   } else {
-    drawText(ctx, 'ВЫ ПОГИБЛИ', cx, 28, { scale: 5, align: 'center', color: C.danger });
+    drawText(ctx, t('summary.title.died'), cx, 28, { scale: 5, align: 'center', color: C.danger });
   }
 
   if (summary.challenge) {
     // Испытание — отдельный зачёт: личный рекорд в нём не ведётся.
-    drawText(ctx, `Испытание дня · ${summary.challenge.date} · ${summary.location.title}`, cx, 80, {
+    drawText(ctx, t('summary.challenge', { date: summary.challenge.date, location: summary.location.title }), cx, 80, {
       scale: SCALE,
       align: 'center',
       color: C.dim,
     });
   } else if (victory && result.beaten.size === 0) {
-    drawText(ctx, `${summary.location.title}: босс повержен`, cx, 80, {
+    drawText(ctx, t('summary.bossDown', { location: summary.location.title }), cx, 80, {
       scale: SCALE,
       align: 'center',
       color: C.dim,
@@ -73,15 +78,15 @@ export function drawSummaryScreen(ctx, canvas, summary) {
   } else if (result.beaten.size > 0) {
     // Мигание — новый рекорд должен бросаться в глаза.
     const color = Math.floor(performance.now() / 260) % 2 === 0 ? C.record : '#fff1b0';
-    drawText(ctx, '+ НОВЫЙ РЕКОРД +', cx, 76, { scale: 3, align: 'center', color });
+    drawText(ctx, t('summary.newRecord'), cx, 76, { scale: 3, align: 'center', color });
   } else {
-    drawText(ctx, `Забег № ${result.record.runs}`, cx, 80, { scale: SCALE, align: 'center', color: C.dim });
+    drawText(ctx, t('summary.run', { number: result.record.runs }), cx, 80, { scale: SCALE, align: 'center', color: C.dim });
   }
 
   const left = cx - PANEL_WIDTH / 2;
   const top = 106;
   const kills = killsLine(stats.killsByType);
-  const build = wrapText(stats.build || 'без улучшений', PANEL_WIDTH - 48, SCALE);
+  const build = wrapText(stats.build || t('summary.noBuild'), PANEL_WIDTH - 48, SCALE);
   const buildHeight = textHeight(SCALE) + 4;
   const killsHeight = kills.length > 0 ? 12 + killRows(kills) * 22 : 0;
   const height = 42 + ROWS.length * ROW_HEIGHT + 28 + killsHeight + build.length * buildHeight + 8;
@@ -93,8 +98,8 @@ export function drawSummaryScreen(ctx, canvas, summary) {
   const valueX = left + 360;
   const recordX = left + PANEL_WIDTH - 24;
   let y = top + 18;
-  drawText(ctx, 'ЭТОТ ЗАБЕГ', valueX, y, { scale: SCALE, align: 'right', color: C.dim });
-  drawText(ctx, 'РЕКОРД', recordX, y, { scale: SCALE, align: 'right', color: C.dim });
+  drawText(ctx, t('summary.thisRun'), valueX, y, { scale: SCALE, align: 'right', color: C.dim });
+  drawText(ctx, t('summary.best'), recordX, y, { scale: SCALE, align: 'right', color: C.dim });
 
   y += 20;
   for (const row of ROWS) {
@@ -118,24 +123,22 @@ export function drawSummaryScreen(ctx, canvas, summary) {
   }
 
   const online = ONLINE_LINES[summary.submit];
-  if (online) drawText(ctx, online.text, canvas.width - 16, 16, { scale: SCALE, align: 'right', color: online.color });
+  if (online) drawText(ctx, t(online.key), canvas.width - 16, 16, { scale: SCALE, align: 'right', color: online.color });
 
   const rank = rankLine(summary.rank);
   if (rank) drawText(ctx, rank.text, 16, 16, { scale: SCALE, color: rank.color });
 
   if (summary.gold > 0) {
-    drawText(ctx, `+${formatNumber(summary.gold)} золота`, cx, canvas.height - 62, {
+    drawText(ctx, t('summary.gold', { gold: formatNumber(summary.gold) }), cx, canvas.height - 62, {
       scale: 3,
       align: 'center',
       color: C.record,
     });
   }
 
-  let hint = 'R / Enter / клик — заново · Esc — в меню';
+  let hint = t('summary.hint.retry');
   if (victory) {
-    hint = summary.next
-      ? `Enter / клик — дальше: ${summary.next.title} · R — заново · Esc — в меню`
-      : 'Enter / клик — в меню · R — заново';
+    hint = summary.next ? t('summary.hint.next', { next: summary.next.title }) : t('summary.hint.menu');
   }
   drawText(ctx, hint, cx, canvas.height - 34, {
     scale: SCALE,
@@ -149,7 +152,7 @@ export function drawSummaryScreen(ctx, canvas, summary) {
 function drawRow(ctx, row, stats, result, { labelX, valueX, recordX, y }) {
   const beaten = result.beaten.has(row.field);
 
-  drawText(ctx, row.label, labelX, y + 4, { scale: SCALE, color: C.dim });
+  drawText(ctx, t(`summary.row.${row.field}`), labelX, y + 4, { scale: SCALE, color: C.dim });
   drawText(ctx, row.format(stats[row.field]), valueX, y, {
     scale: 3,
     align: 'right',
@@ -159,7 +162,7 @@ function drawRow(ctx, row, stats, result, { labelX, valueX, recordX, y }) {
   if (!(row.field in result.record)) return;
 
   if (beaten) {
-    drawText(ctx, `было ${row.format(result.previous[row.field])}`, recordX, y + 4, {
+    drawText(ctx, t('summary.was', { value: row.format(result.previous[row.field]) }), recordX, y + 4, {
       scale: SCALE,
       align: 'right',
       color: C.record,

@@ -1,7 +1,8 @@
+import { localize } from '../i18n/index.js';
+
 /** Вторая локация: тёмный лес с папоротником, грибами и соснами. */
 export const FOREST = {
   id: 'forest',
-  title: 'Лес',
   /** Секунд до босса: восемь минут. */
   duration: 480,
   world: { width: 3200, height: 2000 },
@@ -34,3 +35,5 @@ export const FOREST = {
     ],
   },
 };
+
+localize(FOREST, 'location.forest', ['title']);

@@ -1,4 +1,5 @@
 import { drawText } from '../gfx/font.js';
+import { t } from '../i18n/index.js';
 import { formatNumber, formatTime } from './format.js';
 import { UI_COLORS as C, pixelPanel } from './panel.js';
 
@@ -8,15 +9,15 @@ const ROW_GAP = 4;
 const TOP = 130;
 const MEDALS = ['#ffd34e', '#c9d1d9', '#d08a4e'];
 
-/** Колонки: заголовок, отступ слева от рамки, выравнивание. */
+/** Колонки: ключ заголовка в словаре, отступ слева от рамки, выравнивание. */
 const COLUMNS = [
-  { title: '', x: 16, align: 'left' },
-  { title: 'ИГРОК', x: 50, align: 'left' },
-  { title: 'ГЕРОЙ', x: 218, align: 'left' },
-  { title: 'УБИЙСТВ', x: 412, align: 'right' },
-  { title: 'ВРЕМЯ', x: 494, align: 'right' },
-  { title: 'УР', x: 546, align: 'right' },
-  { title: 'УРОН', x: 690, align: 'right' },
+  { title: null, x: 16, align: 'left' },
+  { title: 'board.col.player', x: 50, align: 'left' },
+  { title: 'board.col.hero', x: 218, align: 'left' },
+  { title: 'board.col.kills', x: 412, align: 'right' },
+  { title: 'board.col.time', x: 494, align: 'right' },
+  { title: 'board.col.level', x: 546, align: 'right' },
+  { title: 'board.col.damage', x: 690, align: 'right' },
 ];
 
 /**
@@ -40,7 +41,7 @@ export function drawLeaderboardScreen(ctx, canvas, heading, entry, heroTitles, o
 
   const header = TOP - 20;
   for (const col of COLUMNS) {
-    drawText(ctx, col.title, left + col.x, header, { scale: 2, align: col.align, color: C.dim });
+    if (col.title) drawText(ctx, t(col.title), left + col.x, header, { scale: 2, align: col.align, color: C.dim });
   }
 
   const rows = entry?.status === 'ok' ? entry.rows : [];
@@ -65,21 +66,19 @@ export function drawLeaderboardScreen(ctx, canvas, heading, entry, heroTitles, o
   // Сообщение поверх пустой таблицы: загрузка, ошибка или «пока никого».
   let message = '';
   let color = C.dim;
-  if (online === 'off') message = 'Онлайн не настроен';
-  else if (!entry || entry.status === 'loading') message = 'Загрузка...';
+  if (online === 'off') message = t('board.offline');
+  else if (!entry || entry.status === 'loading') message = t('board.loading');
   else if (entry.status === 'error') {
-    message = 'Не удалось загрузить таблицу';
+    message = t('board.error');
     color = C.danger;
-  } else if (entry.rows.length === 0) message = heading.daily ? 'Сегодня ещё никто не играл' : 'Пока пусто — станьте первым!';
+  } else if (entry.rows.length === 0) message = t(heading.daily ? 'board.emptyDaily' : 'board.empty');
   if (message) {
     const y = TOP + 4 * (ROW_HEIGHT + ROW_GAP);
     pixelPanel(ctx, cx - 240, y, 480, 44, C.well, C.border);
     drawText(ctx, message, cx, y + 15, { scale: 2, align: 'center', color });
   }
 
-  const hint = heading.daily
-    ? 'C — к локациям · R — обновить · Esc / T — назад'
-    : 'A / D — локация · C — испытание дня · R — обновить · Esc / T — назад';
+  const hint = t(heading.daily ? 'board.hint.daily' : 'board.hint');
   drawText(ctx, hint, cx, canvas.height - 28, {
     scale: 2,
     align: 'center',

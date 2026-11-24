@@ -1,4 +1,5 @@
 import { spawnProjectile } from '../entities/projectile.js';
+import { localize, localizeLevels } from '../i18n/index.js';
 
 /**
  * Метательный нож: летит туда, куда смотрит игрок, и пробивает насквозь.
@@ -6,8 +7,6 @@ import { spawnProjectile } from '../entities/projectile.js';
  */
 export const knife = {
   id: 'knife',
-  title: 'Нож',
-  description: 'Летит по направлению взгляда и пробивает врагов насквозь',
   color: '#e6f1ff',
   icon: 'knife',
   base: {
@@ -21,17 +20,16 @@ export const knife = {
     spread: 0.2,
   },
   levels: [
-    { text: 'Второй нож веером', show: 'count', apply: (s) => { s.count += 1; } },
-    { text: 'Урон +40%', show: 'damage', apply: (s) => { s.damage *= 1.4; } },
+    { show: 'count', apply: (s) => { s.count += 1; } },
+    { show: 'damage', apply: (s) => { s.damage *= 1.4; } },
     {
-      text: 'Третий нож, пробивают ещё одного врага',
       show: 'count',
       apply: (s) => {
         s.count += 1;
         s.pierce += 1;
       },
     },
-    { text: 'Бросает на 30% чаще', show: 'cooldown', apply: (s) => { s.cooldown *= 0.7; } },
+    { show: 'cooldown', apply: (s) => { s.cooldown *= 0.7; } },
   ],
 
   // Нож бросается всегда, даже без врагов рядом: игрок целится сам.
@@ -58,3 +56,6 @@ export const knife = {
     return true;
   },
 };
+
+localize(knife, 'weapon.knife', ['title', 'description']);
+localizeLevels(knife, 'weapon.knife');

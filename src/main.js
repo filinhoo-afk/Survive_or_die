@@ -1,4 +1,6 @@
 import { CONFIG } from './config.js';
+import { getLanguage, nextLanguage, setLanguage, t } from './i18n/index.js';
+import { loadLanguage, saveLanguage } from './systems/language.js';
 import { createLoop } from './engine/loop.js';
 import { createInput } from './engine/input.js';
 import { Camera } from './engine/camera.js';
@@ -78,6 +80,17 @@ const ctx = canvas.getContext('2d');
 canvas.width = CONFIG.width;
 canvas.height = CONFIG.height;
 
+/** Язык игры: сохранённый выбор, а без него — язык браузера. */
+setLanguage(loadLanguage());
+const hintLine = document.querySelector('.hint');
+
+/** Подпись под игрой и атрибут lang страницы идут за языком игры. */
+function syncPage() {
+  document.documentElement.lang = getLanguage();
+  if (hintLine) hintLine.textContent = t('page.hint');
+}
+syncPage();
+
 /** Текущая локация: мир, земля и враги берутся из её данных. */
 let location;
 let world;
@@ -143,11 +156,20 @@ function closeSettings() {
   mode = settingsReturn;
 }
 
-/** Сдвиг громкости на шаг; на строках не про громкость ничего не делает. */
-function nudgeVolume(row, direction) {
-  const channel = SETTINGS_ROWS[row];
-  if (channel?.kind !== 'volume') return;
-  setVolume(channel.id, settings[channel.id] + direction / VOLUME_STEPS);
+/** Сдвиг громкости на шаг или смена языка; на остальных строках ничего не делает. */
+function nudgeSetting(row, direction) {
+  const item = SETTINGS_ROWS[row];
+  if (item?.kind === 'volume') setVolume(item.id, settings[item.id] + direction / VOLUME_STEPS);
+  else if (item?.kind === 'language') shiftLanguage(direction);
+}
+
+/** Переключает язык по кругу: тексты меняются сразу, выбор запоминается. */
+function shiftLanguage(step) {
+  const next = nextLanguage(getLanguage(), step);
+  setLanguage(next);
+  saveLanguage(next);
+  syncPage();
+  audio.play('pick');
 }
 
 function setVolume(id, value) {
@@ -163,6 +185,8 @@ function activateSetting(row) {
   if (item.kind === 'key') {
     rebinding = item.id;
     settingsNotice = '';
+  } else if (item.kind === 'language') {
+    shiftLanguage(1);
   } else if (item.kind === 'reset') {
     applySettings(defaultSettings());
     audio.play('pick');
@@ -178,7 +202,7 @@ function captureBinding(code) {
   }
   const next = rebind(settings, rebinding, code);
   if (!next) {
-    settingsNotice = 'Эта клавиша занята игрой';
+    settingsNotice = t('settings.keyTaken');
     audio.play('hit');
     return;
   }
@@ -221,7 +245,7 @@ function captureNickname(event) {
       nickDraft = next;
       nickNotice = '';
     } else if (event.key.length === 1) {
-      nickNotice = nickDraft.length >= NICK_MAX ? `Не больше ${NICK_MAX} символов` : 'Такой символ нельзя';
+      nickNotice = nickDraft.length >= NICK_MAX ? t('nick.tooLong', { max: NICK_MAX }) : t('nick.badChar');
       audio.play('hit');
     }
   }
@@ -533,7 +557,7 @@ function onKey(event) {
     if (event.code === 'Escape' || event.code === 'KeyO') closeSettings();
     else if (up) settingsSelected = (settingsSelected + SETTINGS_ROWS.length - 1) % SETTINGS_ROWS.length;
     else if (down) settingsSelected = (settingsSelected + 1) % SETTINGS_ROWS.length;
-    else if (event.code in MENU_SHIFT) nudgeVolume(settingsSelected, MENU_SHIFT[event.code]);
+    else if (event.code in MENU_SHIFT) nudgeSetting(settingsSelected, MENU_SHIFT[event.code]);
     else if (event.code === 'Enter' || event.code === 'Space') activateSetting(settingsSelected);
     return;
   }
@@ -713,7 +737,7 @@ backend.check().then((state) => {
  * Таблица рекордов: топ каждой локации и топ испытания дня. Загружаются при
  * первом показе и по R; ключ — id локации или `daily:ДАТА`.
  */
-const heroTitles = new Map(HEROES.map((h) => [h.id, h.title]));
+const heroTitles = { get: (id) => HEROES.find((h) => h.id === id)?.title };
 const boards = new Map();
 let boardIndex = 0;
 /** Показана таблица испытания дня, а не локации. */
@@ -996,14 +1020,14 @@ function render() {
       const place = LOCATIONS[today.locationId];
       const heroTitle = heroTitles.get(today.heroId) ?? today.heroId;
       drawLeaderboardScreen(ctx, canvas, {
-        title: 'ИСПЫТАНИЕ ДНЯ',
+        title: t('board.daily'),
         daily: true,
         subtitle: `${today.date} · ${place.title} · ${heroTitle}`,
       }, boards.get(currentBoardKey()), heroTitles, online);
     } else {
       const board = LOCATION_LIST[boardIndex];
       drawLeaderboardScreen(ctx, canvas, {
-        title: 'РЕКОРДЫ',
+        title: t('board.title'),
         subtitle: `${board.title}  ${boardIndex + 1}/${LOCATION_LIST.length}`,
       }, boards.get(board.id), heroTitles, online);
     }
@@ -1099,8 +1123,8 @@ function drawHud() {
   if (boss?.alive) {
     drawBossBar();
   } else if (boss) {
-    const label = chest?.opened ? 'ПОВЕРЖЕН' : 'ПОВЕРЖЕН — ОТКРОЙ СУНДУК';
-    drawText(ctx, `${boss.type.title.toUpperCase()} ${label}`, canvas.width / 2, 52, {
+    const label = t(chest?.opened ? 'hud.bossDown' : 'hud.bossDownChest', { boss: boss.type.title.toUpperCase() });
+    drawText(ctx, label, canvas.width / 2, 52, {
       scale: 2,
       align: 'center',
       color: colors.hudText,
@@ -1108,7 +1132,7 @@ function drawHud() {
     });
   } else if (location.duration !== null) {
     const left = Math.max(0, location.duration - elapsed);
-    drawText(ctx, `БОСС ЧЕРЕЗ ${formatTime(left)}`, canvas.width / 2, 52, {
+    drawText(ctx, t('hud.bossIn', { time: formatTime(left) }), canvas.width / 2, 52, {
       scale: 2,
       align: 'center',
       color: colors.hudDim,
@@ -1117,7 +1141,7 @@ function drawHud() {
   }
 
   if (challenge) {
-    drawText(ctx, `ИСПЫТАНИЕ ДНЯ · ${challenge.date}`, canvas.width / 2, 74, {
+    drawText(ctx, t('hud.daily', { date: challenge.date }), canvas.width / 2, 74, {
       scale: 2,
       align: 'center',
       color: colors.hudDim,
@@ -1215,9 +1239,9 @@ function drawStats() {
   let y = 56;
 
   const rows = [
-    [`УР ${player.level}`, `ОПЫТ ${player.xp}/${player.xpToNext}`],
-    [`УБИЙСТВ ${kills}`, `ВРАГОВ ${enemies.length}`],
-    [`ВОЛНА ${spawner.wave}`, `ЧЕРЕЗ ${spawner.timeToNextWave.toFixed(1)} С`],
+    [t('hud.level', { level: player.level }), t('hud.xp', { xp: player.xp, next: player.xpToNext })],
+    [t('hud.kills', { kills }), t('hud.enemies', { count: enemies.length })],
+    [t('hud.wave', { wave: spawner.wave }), t('hud.nextWave', { seconds: spawner.timeToNextWave.toFixed(1) })],
   ];
   for (const [main, extra] of rows) {
     drawText(ctx, main, x, y, { scale, color: colors.hudText, shadow: colors.hudShadow });
@@ -1235,14 +1259,15 @@ function drawStats() {
   }
 }
 
-/** Испытание на сегодня для строки в меню: дата, сид, где и за кого. Считается раз в сутки. */
+/** Испытание на сегодня для строки в меню: дата, сид, где и за кого. Пересчитывается раз в сутки и при смене языка. */
 let dailyShown = null;
 function dailyInfo() {
   const date = todayUtc();
-  if (dailyShown?.date !== date) {
+  if (dailyShown?.date !== date || dailyShown.lang !== getLanguage()) {
     const today = dailyChallenge(date);
     dailyShown = {
       date,
+      lang: getLanguage(),
       seed: seedLabel(today.seed),
       location: LOCATIONS[today.locationId].title.toUpperCase(),
       hero: (heroTitles.get(today.heroId) ?? today.heroId).toUpperCase(),

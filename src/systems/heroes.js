@@ -3,15 +3,16 @@
  * Выбор запоминается в единой записи сохранения (save.js); нет записи — первый.
  */
 
+import { localize } from '../i18n/index.js';
 import { patchSave, readSave } from './save.js';
 
 export const HEROES = [
-  { id: 'gunner', title: 'Стрелок', weapon: 'cannon', desc: 'Пушка · без изъянов', color: '#ffd65a' },
+  { id: 'gunner', weapon: 'cannon', color: '#ffd65a' },
   {
     id: 'thrower',
-    title: 'Метатель',
+   
     weapon: 'knife',
-    desc: 'Нож · +10% скорости, -15 здоровья',
+   
     color: '#8fd3ff',
     apply: (p) => {
       p.speed *= 1.1;
@@ -20,9 +21,9 @@ export const HEROES = [
   },
   {
     id: 'warden',
-    title: 'Страж',
+   
     weapon: 'orbit',
-    desc: 'Щит · +30 здоровья, -8% скорости',
+   
     color: '#5dcaa5',
     apply: (p) => {
       p.maxHp += 30;
@@ -30,6 +31,8 @@ export const HEROES = [
     },
   },
 ];
+
+for (const hero of HEROES) localize(hero, `hero.${hero.id}`, ['title', 'desc']);
 
 export function loadHeroIndex() {
   const index = HEROES.findIndex((h) => h.id === readSave().hero);

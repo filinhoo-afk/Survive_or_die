@@ -2,6 +2,7 @@ import { cannon } from './cannon.js';
 import { knife } from './knife.js';
 import { orbit } from './orbit.js';
 import { aura } from './aura.js';
+import { localize } from '../i18n/index.js';
 
 /**
  * Эволюции: оружие на максимальном уровне плюс взятая пассивка
@@ -17,8 +18,6 @@ export const EVOLUTIONS = [
   {
     ...cannon,
     id: 'thunder',
-    title: 'Громобой',
-    description: 'Пушка + Сила: три тяжёлых заряда прошивают толпу',
     color: '#ffd65a',
     icon: 'thunder',
     evolvesFrom: 'cannon',
@@ -38,8 +37,6 @@ export const EVOLUTIONS = [
   {
     ...knife,
     id: 'blades',
-    title: 'Вихрь клинков',
-    description: 'Нож + Спешка: клинки летят во все восемь сторон',
     color: '#ffe9a0',
     icon: 'blades',
     evolvesFrom: 'knife',
@@ -59,8 +56,6 @@ export const EVOLUTIONS = [
   {
     ...orbit,
     id: 'bastion',
-    title: 'Бастион',
-    description: 'Щит + Броня: шесть тяжёлых шаров сбивают вражеские снаряды',
     color: '#f2c14e',
     icon: 'bastion',
     evolvesFrom: 'orbit',
@@ -80,8 +75,6 @@ export const EVOLUTIONS = [
   {
     ...aura,
     id: 'sanctum',
-    title: 'Святая земля',
-    description: 'Аура + Регенерация: жжёт шире и лечит, пока задевает врагов',
     color: '#ffe27a',
     icon: 'sanctum',
     evolvesFrom: 'aura',
@@ -98,3 +91,5 @@ export const EVOLUTIONS = [
     levels: [],
   },
 ];
+
+for (const evolution of EVOLUTIONS) localize(evolution, `weapon.${evolution.id}`, ['title', 'description']);

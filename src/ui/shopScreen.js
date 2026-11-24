@@ -1,4 +1,5 @@
 import { drawText } from '../gfx/font.js';
+import { t } from '../i18n/index.js';
 import { META_UPGRADES, levelOf, priceOf } from '../systems/meta.js';
 import { UI_COLORS as C, pixelPanel } from './panel.js';
 
@@ -27,8 +28,8 @@ export function drawShopScreen(ctx, canvas, meta, selected) {
   const cx = canvas.width / 2;
   const left = (canvas.width - ROW_WIDTH) / 2;
 
-  drawText(ctx, 'МАГАЗИН', cx, 50, { scale: 6, align: 'center', color: C.title });
-  drawText(ctx, `Золото: ${meta.gold}`, cx, 108, { scale: 3, align: 'center', color: C.record });
+  drawText(ctx, t('shop.title'), cx, 50, { scale: 6, align: 'center', color: C.title });
+  drawText(ctx, t('shop.gold', { gold: meta.gold }), cx, 108, { scale: 3, align: 'center', color: C.record });
 
   META_UPGRADES.forEach((upgrade, i) => {
     const top = rowTop(canvas, i);
@@ -47,14 +48,14 @@ export function drawShopScreen(ctx, canvas, meta, selected) {
       ctx.fillRect(left + 330 + p * 18, top + 20, 14, 14);
     }
 
-    drawText(ctx, price === null ? 'МАКС' : `${price}`, left + ROW_WIDTH - 20, top + 18, {
+    drawText(ctx, price === null ? t('shop.max') : `${price}`, left + ROW_WIDTH - 20, top + 18, {
       scale: 3,
       align: 'right',
       color: price === null ? C.dim : affordable ? C.record : C.danger,
     });
   });
 
-  drawText(ctx, 'W / S — выбор · Enter / клик — купить · Esc — назад', cx, canvas.height - 40, {
+  drawText(ctx, t('shop.hint'), cx, canvas.height - 40, {
     scale: 2,
     align: 'center',
     color: C.dim,

@@ -2,6 +2,7 @@ import { CONFIG } from '../config.js';
 import { atlas } from '../art/index.js';
 import { Animator } from '../gfx/animator.js';
 import { Pool } from './pool.js';
+import { t } from '../i18n/index.js';
 
 /**
  * Записи эффектов общие для всех видов: вид задаёт, какие поля читаются.
@@ -85,7 +86,7 @@ export class Effects {
     ring.color = CONFIG.colors.levelUp;
     ring.radius = CONFIG.effects.levelUpRadius;
     const text = this.add('text', x, y - 30, life * 1.6);
-    text.text = `Уровень ${level}`;
+    text.text = t('upgrade.level', { level });
     text.color = CONFIG.colors.levelUp;
   }
 

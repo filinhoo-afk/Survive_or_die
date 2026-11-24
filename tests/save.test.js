@@ -19,6 +19,7 @@ describe('единое сохранение', () => {
       location: null,
       settings: null,
       nick: null,
+      lang: null,
     });
   });
 

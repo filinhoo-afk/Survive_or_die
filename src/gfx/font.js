@@ -139,6 +139,12 @@ function normalize(text) {
   return String(text).toUpperCase();
 }
 
+/** Умеет ли шрифт рисовать символ (в верхнем регистре); неизвестные уходят в «?». */
+export function hasGlyph(char) {
+  const upper = normalize(char);
+  return upper === ' ' || upper in SHAPES || upper in ALIASES;
+}
+
 function advanceOf(char) {
   return char === ' ' ? SPACE_WIDTH : bounds(shapeOf(char)).width;
 }

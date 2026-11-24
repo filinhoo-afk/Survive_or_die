@@ -1,4 +1,5 @@
 import { atlas } from '../art/index.js';
+import { t } from '../i18n/index.js';
 import { drawFrame } from '../gfx/atlas.js';
 import { drawText, measureText, textHeight, wrapText } from '../gfx/font.js';
 import { UI_COLORS, pixelPanel } from './panel.js';
@@ -38,12 +39,12 @@ export function drawUpgradeScreen(ctx, canvas, { offers, hovered, level }) {
   ctx.fillStyle = COLORS.veil;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  drawText(ctx, `Уровень ${level}`, canvas.width / 2, 78, {
+  drawText(ctx, t('upgrade.level', { level }), canvas.width / 2, 78, {
     scale: 4,
     align: 'center',
     color: COLORS.accent,
   });
-  drawText(ctx, 'Выбери улучшение: клавиши 1, 2, 3 или клик', canvas.width / 2, 124, {
+  drawText(ctx, t('upgrade.hint'), canvas.width / 2, 124, {
     scale: 2,
     align: 'center',
     color: COLORS.dim,
@@ -90,7 +91,7 @@ function drawCard(ctx, rect, card, index, hovered) {
   drawText(ctx, card.badge, cx, y + 126, {
     scale: 2,
     align: 'center',
-    color: card.badgeColor ?? (card.highlight || card.badge.startsWith('новое') ? card.color : COLORS.dim),
+    color: card.badgeColor ?? (card.highlight || card.fresh ? card.color : COLORS.dim),
   });
 
   const lines = wrapText(card.text, rect.width - 32, 2).slice(0, 4);

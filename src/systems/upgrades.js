@@ -1,3 +1,4 @@
+import { localize, t } from '../i18n/index.js';
 import { EVOLUTIONS, WEAPONS } from '../weapons/index.js';
 import { random as rand } from './rng.js';
 
@@ -8,8 +9,6 @@ import { random as rand } from './rng.js';
 export const PASSIVES = [
   {
     id: 'speed',
-    title: 'Лёгкие ботинки',
-    text: 'Скорость бега +10%',
     color: '#7ee787',
     icon: 'speed',
     maxRank: 5,
@@ -22,8 +21,6 @@ export const PASSIVES = [
   },
   {
     id: 'vitality',
-    title: 'Крепкое сердце',
-    text: 'Здоровье +20 и сразу лечит на 20',
     color: '#f2786a',
     icon: 'heart',
     maxRank: 5,
@@ -37,8 +34,6 @@ export const PASSIVES = [
   },
   {
     id: 'might',
-    title: 'Сила',
-    text: 'Урон всего оружия +10%',
     color: '#f0997b',
     icon: 'might',
     maxRank: 5,
@@ -51,8 +46,6 @@ export const PASSIVES = [
   },
   {
     id: 'haste',
-    title: 'Спешка',
-    text: 'Всё оружие перезаряжается на 8% быстрее',
     color: '#f2c14e',
     icon: 'rate',
     maxRank: 5,
@@ -65,8 +58,6 @@ export const PASSIVES = [
   },
   {
     id: 'area',
-    title: 'Размах',
-    text: 'Аура и щит шире на 10%',
     color: '#5dcaa5',
     icon: 'area',
     maxRank: 5,
@@ -79,8 +70,6 @@ export const PASSIVES = [
   },
   {
     id: 'regen',
-    title: 'Регенерация',
-    text: 'Восстанавливает 0.4 здоровья в секунду',
     color: '#97c459',
     icon: 'regen',
     maxRank: 5,
@@ -89,12 +78,10 @@ export const PASSIVES = [
     set: (player, value) => {
       player.regen = value;
     },
-    format: (value) => `${value.toFixed(1)}/с`,
+    format: (value) => t('fmt.perSecond', { value: value.toFixed(1) }),
   },
   {
     id: 'armor',
-    title: 'Броня',
-    text: 'Каждый удар по тебе слабее на 1',
     color: '#b4b2a9',
     icon: 'armor',
     maxRank: 5,
@@ -107,8 +94,6 @@ export const PASSIVES = [
   },
   {
     id: 'magnet',
-    title: 'Магнит',
-    text: 'Кристаллы тянутся на 35% дальше',
     color: '#a78bfa',
     icon: 'magnet',
     maxRank: 5,
@@ -121,6 +106,8 @@ export const PASSIVES = [
   },
 ];
 
+for (const passive of PASSIVES) localize(passive, `passive.${passive.id}`, ['title', 'text']);
+
 /** Относительные шансы карточек попасть в выбор. */
 const CARD_WEIGHT = {
   newWeapon: 3,
@@ -131,8 +118,8 @@ const CARD_WEIGHT = {
 /** Как показывать на карточке характеристику оружия. */
 const STAT_FORMAT = {
   damage: (v) => `${Math.round(v)}`,
-  cooldown: (v) => `${(1 / v).toFixed(1)}/с`,
-  count: (v) => `${v} шт`,
+  cooldown: (v) => t('fmt.perSecond', { value: (1 / v).toFixed(1) }),
+  count: (v) => t('fmt.count', { value: v }),
   pierce: (v) => `${v}`,
   radius: (v) => `${Math.round(v)}`,
 };
@@ -236,7 +223,8 @@ export class UpgradeState {
       text: definition.description,
       color: definition.color,
       icon: definition.icon,
-      badge: 'новое оружие',
+      badge: t('upgrade.badge.newWeapon'),
+      fresh: true,
       preview: null,
       weight: CARD_WEIGHT.newWeapon,
       apply: () => this.arsenal.add(definition.id),
@@ -258,7 +246,7 @@ export class UpgradeState {
       text: nextLevel.text,
       color: definition.color,
       icon: definition.icon,
-      badge: `уровень ${weapon.level} → ${weapon.level + 1}`,
+      badge: t('upgrade.badge.level', { from: weapon.level, to: weapon.level + 1 }),
       preview: [format(now[nextLevel.show]), format(after[nextLevel.show])],
       weight: CARD_WEIGHT.weaponLevel,
       apply: () => weapon.levelUp(),
@@ -272,7 +260,7 @@ export class UpgradeState {
       text: evolution.description,
       color: evolution.color,
       icon: evolution.icon,
-      badge: 'эволюция',
+      badge: t('upgrade.badge.evolution'),
       highlight: true,
       evolution: true,
       preview: null,
@@ -302,7 +290,12 @@ export class UpgradeState {
       text: passive.text,
       color: passive.color,
       icon: passive.icon,
-      badge: key ? 'ключ к эволюции' : rank === 0 ? 'новое' : `ранг ${rank} → ${rank + 1}`,
+      badge: key
+        ? t('upgrade.badge.key')
+        : rank === 0
+          ? t('upgrade.badge.new')
+          : t('upgrade.badge.rank', { from: rank, to: rank + 1 }),
+      fresh: rank === 0,
       badgeColor: key?.color,
       preview: [passive.format(value), passive.format(passive.next(value))],
       weight: CARD_WEIGHT.passive,

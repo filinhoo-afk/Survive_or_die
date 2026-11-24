@@ -1,11 +1,10 @@
 import { spawnProjectile } from '../entities/projectile.js';
 import { nearestEnemies } from '../systems/targeting.js';
+import { localize, localizeLevels } from '../i18n/index.js';
 
 /** Автопушка: сама бьёт по ближайшим врагам в радиусе. */
 export const cannon = {
   id: 'cannon',
-  title: 'Пушка',
-  description: 'Сама стреляет в ближайшего врага',
   color: '#9ad8ff',
   icon: 'bullet',
   base: {
@@ -17,10 +16,10 @@ export const cannon = {
     pierce: 0,
   },
   levels: [
-    { text: 'Урон +25%', show: 'damage', apply: (s) => { s.damage *= 1.25; } },
-    { text: 'Второй снаряд по второй цели', show: 'count', apply: (s) => { s.count += 1; } },
-    { text: 'Стреляет на 20% чаще', show: 'cooldown', apply: (s) => { s.cooldown *= 0.8; } },
-    { text: 'Снаряды пробивают одного врага', show: 'pierce', apply: (s) => { s.pierce += 1; } },
+    { show: 'damage', apply: (s) => { s.damage *= 1.25; } },
+    { show: 'count', apply: (s) => { s.count += 1; } },
+    { show: 'cooldown', apply: (s) => { s.cooldown *= 0.8; } },
+    { show: 'pierce', apply: (s) => { s.pierce += 1; } },
   ],
 
   fire(stats, { player, enemyGrid, projectiles }, weapon) {
@@ -50,3 +49,6 @@ export const cannon = {
     return true;
   },
 };
+
+localize(cannon, 'weapon.cannon', ['title', 'description']);
+localizeLevels(cannon, 'weapon.cannon');

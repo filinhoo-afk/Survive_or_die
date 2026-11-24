@@ -7,6 +7,7 @@
  *   knockbackResist       — добавка к сопротивлению отбросу;
  *   drop                  — гарантированно роняет предмет.
  */
+import { localize } from '../i18n/index.js';
 import { random } from '../systems/rng.js';
 
 export const ELITE = {
@@ -23,11 +24,13 @@ export const ELITE = {
 };
 
 export const ELITE_MODIFIERS = {
-  armored: { id: 'armored', title: 'Бронированный', color: '#9aa6bd', hp: 2, knockbackResist: 0.7 },
-  swift: { id: 'swift', title: 'Проворный', color: '#4cc9f0', speed: 1.5 },
-  brutal: { id: 'brutal', title: 'Свирепый', color: '#f2786a', damage: 1.7 },
-  rich: { id: 'rich', title: 'Богатый', color: '#ffd34e', xp: 2, drop: true },
+  armored: { id: 'armored', color: '#9aa6bd', hp: 2, knockbackResist: 0.7 },
+  swift: { id: 'swift', color: '#4cc9f0', speed: 1.5 },
+  brutal: { id: 'brutal', color: '#f2786a', damage: 1.7 },
+  rich: { id: 'rich', color: '#ffd34e', xp: 2, drop: true },
 };
+
+for (const modifier of Object.values(ELITE_MODIFIERS)) localize(modifier, `elite.${modifier.id}`, ['title']);
 
 /** Случайный модификатор: все равновероятны. */
 export function rollModifier() {

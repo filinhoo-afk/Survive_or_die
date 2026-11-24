@@ -1,6 +1,7 @@
 import { CONFIG } from '../config.js';
 import { atlas } from '../art/index.js';
 import { Animator } from '../gfx/animator.js';
+import { localize, localizeLevels } from '../i18n/index.js';
 
 /**
  * Орбитальный щит: шары кружат вокруг игрока и бьют всех, кого задевают.
@@ -10,8 +11,6 @@ import { Animator } from '../gfx/animator.js';
  */
 export const orbit = {
   id: 'orbit',
-  title: 'Щит',
-  description: 'Шары кружат вокруг и бьют всех, кого заденут',
   color: '#5dcaa5',
   icon: 'orbit',
   layer: 'over',
@@ -29,17 +28,16 @@ export const orbit = {
     hitInterval: 0.5,
   },
   levels: [
-    { text: 'Третий шар', show: 'count', apply: (s) => { s.count += 1; } },
-    { text: 'Урон +40%', show: 'damage', apply: (s) => { s.damage *= 1.4; } },
+    { show: 'count', apply: (s) => { s.count += 1; } },
+    { show: 'damage', apply: (s) => { s.damage *= 1.4; } },
     {
-      text: 'Орбита шире на 20% и вращается быстрее',
       show: 'radius',
       apply: (s) => {
         s.radius *= 1.2;
         s.rotation *= 1.3;
       },
     },
-    { text: 'Ещё два шара', show: 'count', apply: (s) => { s.count += 2; } },
+    { show: 'count', apply: (s) => { s.count += 2; } },
   ],
 
   createState: (definition) => ({
@@ -115,3 +113,6 @@ function orbPositions(stats, state, player) {
     };
   });
 }
+
+localize(orbit, 'weapon.orbit', ['title', 'description']);
+localizeLevels(orbit, 'weapon.orbit');

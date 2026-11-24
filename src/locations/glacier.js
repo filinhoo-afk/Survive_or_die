@@ -1,10 +1,11 @@
+import { localize } from '../i18n/index.js';
+
 /**
  * Четвёртая локация: ледник. Пол скользкий — герой разгоняется и тормозит
  * не сразу, а метель сужает обзор: дальше круга вокруг героя всё тонет в белом.
  */
 export const GLACIER = {
   id: 'glacier',
-  title: 'Ледник',
   /** Секунд до босса: восемь минут. */
   duration: 480,
   world: { width: 3200, height: 2000 },
@@ -47,3 +48,5 @@ export const GLACIER = {
     ],
   },
 };
+
+localize(GLACIER, 'location.glacier', ['title']);

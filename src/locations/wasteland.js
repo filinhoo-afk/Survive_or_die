@@ -1,7 +1,8 @@
+import { localize } from '../i18n/index.js';
+
 /** Стартовая локация: тёмная пустошь с травой, камнями и костями. */
 export const WASTELAND = {
   id: 'wasteland',
-  title: 'Пустошь',
   /** Секунд до босса; null — забег бесконечный, босса пока нет. */
   duration: null,
   world: { width: 2880, height: 1800 },
@@ -39,3 +40,5 @@ export const WASTELAND = {
     ],
   },
 };
+
+localize(WASTELAND, 'location.wasteland', ['title']);

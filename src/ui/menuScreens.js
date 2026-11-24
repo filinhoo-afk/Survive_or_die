@@ -1,4 +1,5 @@
 import { drawText, textHeight } from '../gfx/font.js';
+import { t } from '../i18n/index.js';
 import { formatTime } from './format.js';
 import { UI_COLORS as C, pixelPanel } from './panel.js';
 
@@ -62,10 +63,10 @@ function drawCampaignMap(ctx, canvas, y, campaign) {
 
 /** Подпись состояния связи с бэкендом рекордов (ключи — ONLINE из online/backend.js). */
 const ONLINE_LABELS = {
-  off: { text: 'онлайн: не настроен', color: C.dim },
-  checking: { text: 'онлайн: проверка...', color: C.dim },
-  ok: { text: 'онлайн: подключено', color: C.accent },
-  error: { text: 'онлайн: нет связи', color: C.danger },
+  off: { key: 'menu.online.off', color: C.dim },
+  checking: { key: 'menu.online.checking', color: C.dim },
+  ok: { key: 'menu.online.ok', color: C.accent },
+  error: { key: 'menu.online.error', color: C.danger },
 };
 
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
@@ -73,17 +74,17 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
   const link = ONLINE_LABELS[online] ?? ONLINE_LABELS.off;
-  drawText(ctx, link.text, 16, 16, { scale: 2, color: link.color });
+  drawText(ctx, t(link.key), 16, 16, { scale: 2, color: link.color });
   // Ник в углу напротив связи: под каким именем результат уйдёт в таблицу.
-  drawText(ctx, nick ? `ИГРОК: ${nick}` : 'ИГРОК: БЕЗ НИКА', canvas.width - 16, 16, {
+  drawText(ctx, nick ? t('menu.player', { nick }) : t('menu.player.none'), canvas.width - 16, 16, {
     scale: 2,
     align: 'right',
     color: nick ? C.accent : C.dim,
   });
   // Испытание дня — над заголовком: общий для всех мир, играется в любой момент.
   if (daily) {
-    drawText(ctx, `ИСПЫТАНИЕ ДНЯ · ${daily.date}`, cx, 40, { scale: 2, align: 'center', color: C.record });
-    drawText(ctx, `${daily.location} · ${daily.hero} · СИД ${daily.seed} · C — играть`, cx, 62, {
+    drawText(ctx, t('menu.daily.title', { date: daily.date }), cx, 40, { scale: 2, align: 'center', color: C.record });
+    drawText(ctx, t('menu.daily.info', daily), cx, 62, {
       scale: 2,
       align: 'center',
       color: C.dim,
@@ -100,25 +101,25 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
   drawCampaignMap(ctx, canvas, mapTop, campaign);
 
   const status = open
-    ? cleared.has(location.id) ? ' · пройдена' : ''
-    : ` · сначала пройдите: ${list[selected - 1].title}`;
+    ? cleared.has(location.id) ? t('menu.status.cleared') : ''
+    : t('menu.status.locked', { name: list[selected - 1].title });
   const lines = [
     { text: `${selected + 1}. ${location.title}${status}`, color: open ? C.accent : C.danger },
-    { text: 'A / D — локация · W / S — герой', color: C.dim },
+    { text: t('menu.keys.select'), color: C.dim },
     ...(hero ? [{ text: `${hero.title}: ${hero.desc}`, color: hero.color }] : []),
-    { text: `B — магазин · золото: ${gold}`, color: C.record },
-    { text: 'T — рекорды · O — настройки · I — ник', color: C.dim },
+    { text: t('menu.gold', { gold }), color: C.record },
+    { text: t('menu.keys.misc'), color: C.dim },
   ];
   if (record.runs > 0) {
     lines.push({
-      text: `Рекорд: ${formatTime(record.time)} · убийств ${record.kills} · ур ${record.level}`,
+      text: t('menu.record', { time: formatTime(record.time), kills: record.kills, level: record.level }),
       color: C.record,
     });
   }
   drawHints(ctx, canvas, mapTop + 40 + 22, lines);
 
   if (blink()) {
-    drawText(ctx, open ? 'Enter / Пробел / клик — начать' : 'Локация закрыта', cx, canvas.height - 24, {
+    drawText(ctx, open ? t('menu.start') : t('menu.locked'), cx, canvas.height - 24, {
       scale: 2,
       align: 'center',
       color: open ? C.accent : C.danger,
@@ -131,11 +132,11 @@ export function drawPauseScreen(ctx, canvas) {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
 
-  drawText(ctx, 'ПАУЗА', cx, 170, { scale: 8, align: 'center', color: C.title });
+  drawText(ctx, t('pause.title'), cx, 170, { scale: 8, align: 'center', color: C.title });
   drawHints(ctx, canvas, 170 + textHeight(8) + 28, [
-    { text: 'Esc / P / клик — продолжить', color: C.accent },
-    { text: 'O — настройки' },
-    { text: 'R — заново' },
-    { text: 'M — в меню' },
+    { text: t('pause.resume'), color: C.accent },
+    { text: t('pause.settings') },
+    { text: t('pause.restart') },
+    { text: t('pause.menu') },
   ]);
 }

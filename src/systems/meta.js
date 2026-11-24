@@ -3,16 +3,19 @@
  * улучшения, купленные за него. Хранит единое сохранение (save.js).
  */
 
+import { localize } from '../i18n/index.js';
 import { patchSave, readSave } from './save.js';
 
 /** Постоянные улучшения: уровень * step даёт бонус, цена растёт с уровнем. */
 export const META_UPGRADES = [
-  { id: 'vitality', title: 'Крепость', desc: '+10 здоровья', max: 5, cost: 40, step: 10 },
-  { id: 'might', title: 'Сила', desc: '+5% урона', max: 5, cost: 60, step: 0.05 },
-  { id: 'swiftness', title: 'Резвость', desc: '+4% скорости', max: 5, cost: 50, step: 0.04 },
-  { id: 'magnetism', title: 'Магнетизм', desc: '+15% радиус сбора', max: 4, cost: 40, step: 0.15 },
-  { id: 'greed', title: 'Жадность', desc: '+10% золота', max: 5, cost: 80, step: 0.1 },
+  { id: 'vitality', max: 5, cost: 40, step: 10 },
+  { id: 'might', max: 5, cost: 60, step: 0.05 },
+  { id: 'swiftness', max: 5, cost: 50, step: 0.04 },
+  { id: 'magnetism', max: 4, cost: 40, step: 0.15 },
+  { id: 'greed', max: 5, cost: 80, step: 0.1 },
 ];
+
+for (const upgrade of META_UPGRADES) localize(upgrade, `meta.${upgrade.id}`, ['title', 'desc']);
 
 function emptyMeta() {
   return { gold: 0, levels: {} };

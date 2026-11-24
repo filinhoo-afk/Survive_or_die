@@ -1,3 +1,5 @@
+import { localize } from '../i18n/index.js';
+
 /**
  * Пятая и последняя локация: бездна. Здесь собрана толпа из всех
  * прошлых локаций — волки, призраки, танки и стрелки идут вперемешку.
@@ -5,7 +7,6 @@
  */
 export const ABYSS = {
   id: 'abyss',
-  title: 'Бездна',
   /** Секунд до финального босса: десять минут. */
   duration: 600,
   world: { width: 3200, height: 2000 },
@@ -37,3 +38,5 @@ export const ABYSS = {
     ],
   },
 };
+
+localize(ABYSS, 'location.abyss', ['title']);

@@ -1,3 +1,5 @@
+import { localize } from '../i18n/index.js';
+
 /**
  * Третья локация: руины с узкими проходами. Стены собраны из блоков, между
  * отрезками оставлены проходы — в них толпа вытягивается в цепочку, зато
@@ -5,7 +7,6 @@
  */
 export const RUINS = {
   id: 'ruins',
-  title: 'Руины',
   /** Секунд до босса: восемь минут. */
   duration: 480,
   world: { width: 3200, height: 2000 },
@@ -61,3 +62,5 @@ export const RUINS = {
     ],
   },
 };
+
+localize(RUINS, 'location.ruins', ['title']);

@@ -9,7 +9,7 @@ const MENU_THRESHOLD = 0.6;
 
 /** Кнопки стандартной раскладки → имена, которые понимает main.js. */
 const BUTTONS = {
-  0: 'a', 1: 'b', 2: 'x', 3: 'y', 4: 'lb', 5: 'rb', 9: 'start',
+  0: 'a', 1: 'b', 2: 'x', 3: 'y', 4: 'lb', 5: 'rb', 8: 'back', 9: 'start',
   12: 'up', 13: 'down', 14: 'left', 15: 'right',
 };
 

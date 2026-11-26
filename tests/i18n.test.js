@@ -32,6 +32,7 @@ import { Arsenal } from '../src/systems/arsenal.js';
 import { EVOLUTIONS, WEAPONS } from '../src/weapons/index.js';
 import { BINDING_ACTIONS, VOLUME_CHANNELS } from '../src/systems/settings.js';
 import { SETTINGS_ROWS } from '../src/ui/settingsScreen.js';
+import { ACHIEVEMENTS } from '../src/systems/achievements.js';
 import { dropStorage, useStorage } from './helpers/storage.js';
 
 const ruKeys = Object.keys(DICTIONARIES.ru);
@@ -156,7 +157,7 @@ describe('ключи в коде', () => {
   }
 
   // Пространства имён интерфейса: у данных (hero, enemy…) ключи собираются из id, их ловят тесты ниже.
-  const UI_KEY = /'((?:menu|pause|settings|nick|shop|upgrade|hud|board|summary|fmt|page|tutorial)\.[\w.]+)'/g;
+  const UI_KEY = /'((?:menu|pause|settings|nick|shop|upgrade|hud|board|summary|fmt|page|tutorial|achievements)\.[\w.]+)'/g;
 
   test('каждый ключ интерфейса, упомянутый в коде, есть в словаре', () => {
     const missing = [];
@@ -173,7 +174,7 @@ describe('ключи в коде', () => {
 
   test('в словаре нет ключей, на которые никто не ссылается', () => {
     // Ключи данных собираются из id (`enemy.${id}.title`), у интерфейса — через шаблоны и литералы.
-    const dynamic = /^(hero|enemy|elite|location|weapon|passive|meta)\.|^summary\.row\.|^settings\.(volume|key)\./;
+    const dynamic = /^(hero|enemy|elite|location|weapon|passive|meta|achievement)\.|^summary\.row\.|^settings\.(volume|key)\./;
     const code = sources().map((file) => readFileSync(file, 'utf8')).join('\n');
     const unused = ruKeys.filter((key) => !dynamic.test(key) && !code.includes(`'${key}'`));
     assert.deepEqual(unused, []);
@@ -217,6 +218,7 @@ describe('данные игры говорят на выбранном язык�
   test('герои', () => checkFields(HEROES, ['title', 'desc'], 'hero.'));
   test('постоянные улучшения', () => checkFields(META_UPGRADES, ['title', 'desc'], 'meta.'));
   test('пассивки', () => checkFields(PASSIVES, ['title', 'text'], 'passive.'));
+  test('достижения', () => checkFields(ACHIEVEMENTS, ['title', 'desc'], 'achievement.'));
   test('оружие и эволюции', () => checkFields([...WEAPONS, ...EVOLUTIONS], ['title', 'description'], 'weapon.'));
 
   test('уровни оружия', () => {

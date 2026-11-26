@@ -70,7 +70,7 @@ const ONLINE_LABELS = {
 };
 
 /** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
-export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off', nick = '', daily = null) {
+export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off', nick = '', daily = null, achievements = null) {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
   const link = ONLINE_LABELS[online] ?? ONLINE_LABELS.off;
@@ -81,6 +81,8 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
     align: 'right',
     color: nick ? C.accent : C.dim,
   });
+  // Достижения — под строкой связи: сколько открыто и какой клавишей посмотреть.
+  if (achievements) drawText(ctx, t('menu.achievements', achievements), 16, 40, { scale: 2, color: C.dim });
   // Испытание дня — над заголовком: общий для всех мир, играется в любой момент.
   if (daily) {
     drawText(ctx, t('menu.daily.title', { date: daily.date }), cx, 40, { scale: 2, align: 'center', color: C.record });

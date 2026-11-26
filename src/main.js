@@ -75,6 +75,9 @@ import { dailyChallenge, todayUtc } from './systems/daily.js';
 import { seedLabel, seedRun, unseedRun } from './systems/rng.js';
 import { Tutorial, loadTutorialPending, saveTutorialPending } from './systems/tutorial.js';
 import { drawTutorialHint } from './ui/tutorialHint.js';
+import { ACHIEVEMENTS, loadAchievements, recordRun, unlock } from './systems/achievements.js';
+import { createToasts, drawToast } from './ui/achievementToast.js';
+import { drawAchievementsScreen } from './ui/achievementsScreen.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -289,6 +292,7 @@ function padKey(button) {
   }
   if (offers) return PAD_CARD_KEYS[button] ?? null;
   if (button === 'start') return mode === 'paused' ? 'Escape' : mode === 'menu' ? 'Enter' : null;
+  if (button === 'back') return mode === 'menu' || mode === 'achievements' ? 'KeyG' : null;
   if (button === 'x') return mode === 'paused' ? 'KeyM' : mode === 'menu' || mode === 'shop' ? 'KeyB' : null;
   if (button === 'y') return mode === 'paused' || summary || mode === 'leaderboard' ? 'KeyR' : mode === 'menu' ? 'KeyT' : null;
   // Пока ждём клавишу для переназначения, геймпад только отменяет.
@@ -326,6 +330,12 @@ let meta = loadMeta();
 let shopSelected = 0;
 /** Выбранный в меню персонаж. */
 let heroIndex = loadHeroIndex();
+
+/** Достижения: что открыто и накоплено за всё время. */
+let achievements = loadAchievements();
+/** Открытое в этом забеге — для экрана итогов; во время игры оно всплывает по одному. */
+let runUnlocked = [];
+const toasts = createToasts();
 
 /** Режим игры: меню, магазин, забег или пауза (поражение — это !player.alive). */
 let mode = 'menu';
@@ -386,6 +396,10 @@ function newRun() {
   killsByType = {};
   damageDealt = 0;
   crits = 0;
+  eliteKills = 0;
+  hurt = false;
+  runUnlocked = [];
+  toasts.clear();
   summary = null;
   victoryDelay = 0;
   chest = null;
@@ -593,6 +607,11 @@ function onKey(event) {
     return;
   }
 
+  if (mode === 'achievements') {
+    if (event.code === 'Escape' || event.code === 'KeyG') mode = 'menu';
+    return;
+  }
+
   if (mode === 'leaderboard') {
     if (event.code === 'Escape' || event.code === 'KeyT') mode = 'menu';
     else if (event.code === 'KeyC') toggleDailyBoard();
@@ -617,6 +636,7 @@ function onKey(event) {
     else if (event.code === 'KeyT') openBoard();
     else if (event.code === 'KeyC') startDaily();
     else if (event.code === 'KeyI') openNickname();
+    else if (event.code === 'KeyG') openAchievements();
     else if (event.code === 'Enter' || event.code === 'Space') startFromMenu();
     else if (event.code in MENU_SHIFT) shiftLocation(MENU_SHIFT[event.code]);
     else if (event.code === 'KeyW' || event.code === 'ArrowUp') shiftHero(-1);
@@ -693,7 +713,7 @@ canvas.addEventListener('click', (event) => {
   audio.unlock();
   audio.startMusic();
   if (transition.busy) return;
-  if (mode === 'nick' || mode === 'leaderboard') return;
+  if (mode === 'nick' || mode === 'leaderboard' || mode === 'achievements') return;
   if (mode === 'settings') {
     const { x, y } = canvasPoint(event);
     const row = settingsRowAt(x, y, canvas);
@@ -739,6 +759,9 @@ let kills = 0;
 let killsByType = {};
 let damageDealt = 0;
 let crits = 0;
+let eliteKills = 0;
+/** Получал ли герой урон в этом забеге. */
+let hurt = false;
 /** Итоги забега: собираются один раз в момент смерти, до этого null. */
 let summary = null;
 /** Секунд до экрана победы после падения босса; 0 — босс ещё жив. */
@@ -813,6 +836,37 @@ function toggleDailyBoard() {
   audio.play('pick');
 }
 
+function openAchievements() {
+  mode = 'achievements';
+  audio.play('pick');
+}
+
+/** Снимок забега, по которому проверяются достижения. */
+function runSnapshot(victory = false) {
+  return {
+    time: elapsed,
+    kills,
+    level: player.level,
+    weapons: arsenal.weapons.length,
+    evolved: arsenal.weapons.filter((weapon) => weapon.definition.evolvesFrom).length,
+    elites: eliteKills,
+    hurt,
+    victory,
+    locationId: location.id,
+    heroId: runHero().id,
+  };
+}
+
+/** Открывает заслуженное прямо по ходу забега: всплывашка и звук. */
+function checkAchievements() {
+  const { state, fresh } = unlock(achievements, runSnapshot());
+  if (fresh.length === 0) return;
+  achievements = state;
+  runUnlocked.push(...fresh);
+  toasts.push(fresh);
+  audio.play('record');
+}
+
 /** Фиксирует итоги забега и обновляет рекорд; victory — босс повержен. */
 function finishRun(victory = false) {
   const stats = {
@@ -833,6 +887,9 @@ function finishRun(victory = false) {
   record = result.record;
   const gold = runGold(meta, stats, victory);
   meta = addGold(meta, gold);
+  const earned = recordRun(achievements, runSnapshot(victory));
+  achievements = earned.state;
+  runUnlocked.push(...earned.fresh);
   summary = {
     stats,
     result,
@@ -841,6 +898,7 @@ function finishRun(victory = false) {
     gold,
     next: victory ? nextLocation() : undefined,
     challenge: daily,
+    unlocked: [...runUnlocked],
     submit: backend.configured ? SUBMIT.sending : SUBMIT.off,
   };
   // Отправка идёт в фоне; экран итогов сам перерисует итог, когда он придёт.
@@ -878,7 +936,7 @@ function update(dt) {
   profiler.begin('логика');
   transition.update(dt);
   pollGamepad();
-  if (mode === 'menu' || mode === 'shop' || mode === 'settings' || mode === 'leaderboard' || mode === 'nick') {
+  if (['menu', 'shop', 'settings', 'leaderboard', 'nick', 'achievements'].includes(mode)) {
     for (const hero of menuHeroes) hero.update(dt);
   }
   // Метель идёт в меню и в живом забеге; пауза и выбор апгрейда замораживают её.
@@ -920,6 +978,7 @@ function update(dt) {
   blockShots(enemyShots, obstacleGrid);
   resolveEnemyShotHits(enemyShots, player);
   if (player.hp < hpBefore) {
+    hurt = true;
     audio.play(player.alive ? 'hit' : 'death');
     camera.addShake(player.alive ? CONFIG.shake.playerHit : CONFIG.shake.playerDeath);
   }
@@ -956,7 +1015,10 @@ function update(dt) {
 
   kills += killed.length;
   tutorial?.add('kills', killed.length);
-  for (const enemy of killed) killsByType[enemy.type.id] = (killsByType[enemy.type.id] ?? 0) + 1;
+  for (const enemy of killed) {
+    killsByType[enemy.type.id] = (killsByType[enemy.type.id] ?? 0) + 1;
+    if (enemy.elite) eliteKills += 1;
+  }
   if (killed.length > 0) {
     audio.play('kill');
     camera.addShake(CONFIG.shake.enemyDeath * Math.min(killed.length, 4));
@@ -985,6 +1047,8 @@ function update(dt) {
   pruneProjectiles(projectiles, world, projectilePool);
   pruneProjectiles(enemyShots, world, enemyShotPool);
   effects.update(dt);
+  toasts.update(dt);
+  checkAchievements();
 
   camera.follow(player, dt);
   if (tutorial?.update(dt)) finishTutorial();
@@ -1071,6 +1135,9 @@ function render() {
         subtitle: `${board.title}  ${boardIndex + 1}/${LOCATION_LIST.length}`,
       }, boards.get(board.id), heroTitles, online);
     }
+  } else if (mode === 'achievements') {
+    drawMenu();
+    drawAchievementsScreen(ctx, canvas, achievements);
   } else if (mode === 'nick') {
     drawMenu();
     drawNicknameScreen(ctx, canvas, nickDraft, nickNotice);
@@ -1191,6 +1258,7 @@ function drawHud() {
 
   drawMinimap();
   if (tutorial && mode === 'playing' && !summary && !offers) drawTutorialHint(ctx, canvas, tutorial, settings.bindings);
+  if (toasts.current && mode === 'playing' && !summary) drawToast(ctx, canvas, toasts.current);
   if (summary) drawSummaryScreen(ctx, canvas, summary);
   if (offers) {
     drawUpgradeScreen(ctx, canvas, {
@@ -1322,7 +1390,10 @@ function drawMenu() {
     list: LOCATION_LIST,
     selected: LOCATION_LIST.indexOf(location),
     cleared,
-  }, meta.gold, HEROES[heroIndex], online, nick, dailyInfo());
+  }, meta.gold, HEROES[heroIndex], online, nick, dailyInfo(), {
+    count: achievements.unlocked.size,
+    total: ACHIEVEMENTS.length,
+  });
   menuHeroes.forEach((hero, i) => {
     hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
   });

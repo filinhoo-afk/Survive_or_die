@@ -21,6 +21,7 @@ describe('единое сохранение', () => {
       nick: null,
       lang: null,
       tutorial: null,
+      achievements: null,
     });
   });
 

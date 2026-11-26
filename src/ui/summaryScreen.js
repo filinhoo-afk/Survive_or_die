@@ -2,6 +2,7 @@ import { ENEMY_TYPE_LIST } from '../enemies/types.js';
 import { drawText, measureText, textHeight, wrapText } from '../gfx/font.js';
 import { formatNumber, formatTime } from './format.js';
 import { UI_COLORS as C, pixelPanel } from './panel.js';
+import { drawUnlockedList } from './achievementToast.js';
 import { t } from '../i18n/index.js';
 
 const PANEL_WIDTH = 580;
@@ -127,6 +128,8 @@ export function drawSummaryScreen(ctx, canvas, summary) {
 
   const rank = rankLine(summary.rank);
   if (rank) drawText(ctx, rank.text, 16, 16, { scale: SCALE, color: rank.color });
+
+  drawUnlockedList(ctx, summary.unlocked ?? []);
 
   if (summary.gold > 0) {
     drawText(ctx, t('summary.gold', { gold: formatNumber(summary.gold) }), cx, canvas.height - 62, {

@@ -2,7 +2,7 @@
  * Единое сохранение прогресса: одна запись в localStorage вместо россыпи
  * ключей. В ней всё, что должно пережить перезагрузку: пройденные локации,
  * золото и улучшения, рекорд, выбранный герой и последняя локация, настройки,
- * никнейм, язык и пройдено ли обучение.
+ * никнейм, язык, пройдено ли обучение и достижения.
  *
  * Запись версионируется. Первое чтение подбирает данные из старых ключей
  * (до дня 51 каждая система хранила своё отдельно) и переносит их в новую
@@ -24,7 +24,7 @@ const LEGACY = {
 let cache = null;
 
 function emptySave() {
-  return { version: SAVE_VERSION, cleared: [], meta: null, record: null, hero: null, location: null, settings: null, nick: null, lang: null, tutorial: null };
+  return { version: SAVE_VERSION, cleared: [], meta: null, record: null, hero: null, location: null, settings: null, nick: null, lang: null, tutorial: null, achievements: null };
 }
 
 function readJson(key) {

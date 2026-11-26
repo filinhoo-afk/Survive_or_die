@@ -156,7 +156,7 @@ describe('ключи в коде', () => {
   }
 
   // Пространства имён интерфейса: у данных (hero, enemy…) ключи собираются из id, их ловят тесты ниже.
-  const UI_KEY = /'((?:menu|pause|settings|nick|shop|upgrade|hud|board|summary|fmt|page)\.[\w.]+)'/g;
+  const UI_KEY = /'((?:menu|pause|settings|nick|shop|upgrade|hud|board|summary|fmt|page|tutorial)\.[\w.]+)'/g;
 
   test('каждый ключ интерфейса, упомянутый в коде, есть в словаре', () => {
     const missing = [];

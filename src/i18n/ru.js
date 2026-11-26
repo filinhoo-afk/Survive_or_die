@@ -29,6 +29,17 @@ export const ru = {
   'pause.restart': 'R — заново',
   'pause.menu': 'M — в меню',
 
+  // Обучение при первом запуске.
+  'tutorial.title': 'ОБУЧЕНИЕ {step}/{total}',
+  'tutorial.move': 'Двигайся: {keys} или стик геймпада',
+  'tutorial.attack': 'Оружие бьёт само: подпускай врагов и убивай',
+  'tutorial.gems': 'Подбирай кристаллы — это опыт',
+  'tutorial.upgrade': 'Заполни полосу опыта и выбери улучшение',
+  'tutorial.crates': 'Бей ящики: в них аптечки, магниты и бомбы',
+  'tutorial.survive': 'Враги всё сильнее. Продержись подольше!',
+  'tutorial.done': 'ГОТОВО!',
+  'tutorial.skip': 'Enter / Y на геймпаде — пропустить',
+
   // Настройки.
   'settings.title': 'НАСТРОЙКИ',
   'settings.volume.master': 'Общая',
@@ -39,6 +50,9 @@ export const ru = {
   'settings.key.left': 'Влево',
   'settings.key.right': 'Вправо',
   'settings.language': 'Язык',
+  'settings.tutorial': 'Обучение',
+  'settings.tutorial.on': 'ВКЛ',
+  'settings.tutorial.off': 'ВЫКЛ',
   'settings.reset': 'Сбросить настройки',
   'settings.waiting': 'НАЖМИТЕ КЛАВИШУ...',
   'settings.hint.rebind': 'Нажмите клавишу · Esc — отмена',

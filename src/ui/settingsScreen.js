@@ -10,17 +10,18 @@ import { UI_COLORS as C, pixelPanel } from './panel.js';
 
 const ROW_HEIGHT = 34;
 const ROW_WIDTH = 640;
-const ROW_GAP = 6;
+const ROW_GAP = 4;
 const TOP = 84;
 const BAR_OFFSET = 250;
 const SEGMENT = 24;
 const SEGMENT_GAP = 4;
 
-/** Строки: громкости, клавиши, язык и сброс. Названия берутся из словаря по `titleKey`. */
+/** Строки: громкости, клавиши, язык, обучение и сброс. Названия берутся из словаря по `titleKey`. */
 export const SETTINGS_ROWS = [
   ...VOLUME_CHANNELS.map((c) => ({ kind: 'volume', id: c.id, titleKey: `settings.volume.${c.id}` })),
   ...BINDING_ACTIONS.map((a) => ({ kind: 'key', id: a.id, titleKey: `settings.key.${a.id}` })),
   { kind: 'language', id: 'language', titleKey: 'settings.language' },
+  { kind: 'tutorial', id: 'tutorial', titleKey: 'settings.tutorial' },
   { kind: 'reset', id: 'reset', titleKey: 'settings.reset' },
 ];
 
@@ -48,8 +49,11 @@ export function settingsBarValue(x, canvas) {
   return Math.min(VOLUME_STEPS, Math.max(0, step)) / VOLUME_STEPS;
 }
 
-/** Экран настроек. `rebinding` — id действия, которому сейчас ждём клавишу, или null. */
-export function drawSettingsScreen(ctx, canvas, settings, selected, rebinding, notice = '') {
+/**
+ * Экран настроек. `rebinding` — id действия, которому сейчас ждём клавишу, или null;
+ * `tutorial` — будет ли обучение в следующем забеге.
+ */
+export function drawSettingsScreen(ctx, canvas, settings, selected, rebinding, notice = '', tutorial = false) {
   ctx.fillStyle = 'rgba(8, 10, 16, 0.9)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const cx = canvas.width / 2;
@@ -99,6 +103,13 @@ export function drawSettingsScreen(ctx, canvas, settings, selected, rebinding, n
         scale: 2,
         align: 'right',
         color: C.accent,
+      });
+    } else if (row.kind === 'tutorial') {
+      const state = t(tutorial ? 'settings.tutorial.on' : 'settings.tutorial.off');
+      drawText(ctx, `←  ${state}  →`, left + ROW_WIDTH - 20, textY, {
+        scale: 2,
+        align: 'right',
+        color: tutorial ? C.accent : C.dim,
       });
     }
   });

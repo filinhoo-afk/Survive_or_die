@@ -28,6 +28,17 @@ export const en = {
   'pause.restart': 'R — restart',
   'pause.menu': 'M — main menu',
 
+  // First-launch tutorial.
+  'tutorial.title': 'TUTORIAL {step}/{total}',
+  'tutorial.move': 'Move: {keys} or the gamepad stick',
+  'tutorial.attack': 'Weapons fire by themselves: kill some enemies',
+  'tutorial.gems': 'Pick up crystals — they are your XP',
+  'tutorial.upgrade': 'Fill the XP bar and choose an upgrade',
+  'tutorial.crates': 'Break crates: heals, magnets and bombs',
+  'tutorial.survive': 'Enemies grow stronger. Stay alive!',
+  'tutorial.done': 'DONE!',
+  'tutorial.skip': 'Enter / gamepad Y — skip',
+
   // Settings.
   'settings.title': 'SETTINGS',
   'settings.volume.master': 'Master',
@@ -38,6 +49,9 @@ export const en = {
   'settings.key.left': 'Left',
   'settings.key.right': 'Right',
   'settings.language': 'Language',
+  'settings.tutorial': 'Tutorial',
+  'settings.tutorial.on': 'ON',
+  'settings.tutorial.off': 'OFF',
   'settings.reset': 'Reset settings',
   'settings.waiting': 'PRESS A KEY...',
   'settings.hint.rebind': 'Press a key · Esc — cancel',

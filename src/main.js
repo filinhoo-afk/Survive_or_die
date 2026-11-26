@@ -73,6 +73,8 @@ import { NICK_MAX, loadNick, saveNick, typeChar } from './systems/nickname.js';
 import { drawNicknameScreen } from './ui/nicknameScreen.js';
 import { dailyChallenge, todayUtc } from './systems/daily.js';
 import { seedLabel, seedRun, unseedRun } from './systems/rng.js';
+import { Tutorial, loadTutorialPending, saveTutorialPending } from './systems/tutorial.js';
+import { drawTutorialHint } from './ui/tutorialHint.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -161,6 +163,7 @@ function nudgeSetting(row, direction) {
   const item = SETTINGS_ROWS[row];
   if (item?.kind === 'volume') setVolume(item.id, settings[item.id] + direction / VOLUME_STEPS);
   else if (item?.kind === 'language') shiftLanguage(direction);
+  else if (item?.kind === 'tutorial') toggleTutorial();
 }
 
 /** Переключает язык по кругу: тексты меняются сразу, выбор запоминается. */
@@ -179,6 +182,25 @@ function setVolume(id, value) {
   audio.play('gem');
 }
 
+/** Обучение: ждёт ли оно нового забега и идущее сейчас (null вне обучения). */
+let tutorialPending = loadTutorialPending();
+let tutorial = null;
+
+/** Включает обучение на следующий забег или выключает вместе с идущим. */
+function toggleTutorial() {
+  tutorialPending = !tutorialPending;
+  saveTutorialPending(tutorialPending);
+  if (!tutorialPending) tutorial = null;
+  audio.play('pick');
+}
+
+/** Обучение пройдено или пропущено: больше не показываем. */
+function finishTutorial() {
+  tutorialPending = false;
+  tutorial = null;
+  saveTutorialPending(false);
+}
+
 /** Выбор строки: клавиша — ждём нажатие, сброс — умолчания. */
 function activateSetting(row) {
   const item = SETTINGS_ROWS[row];
@@ -187,6 +209,8 @@ function activateSetting(row) {
     settingsNotice = '';
   } else if (item.kind === 'language') {
     shiftLanguage(1);
+  } else if (item.kind === 'tutorial') {
+    toggleTutorial();
   } else if (item.kind === 'reset') {
     applySettings(defaultSettings());
     audio.play('pick');
@@ -258,7 +282,11 @@ const PAD_CARD_KEYS = { a: 'Digit1', b: 'Digit2', x: 'Digit3' };
 function padKey(button) {
   // Ник набирают с клавиатуры; геймпаду остаётся сохранить или отменить.
   if (mode === 'nick') return button === 'a' ? 'Enter' : button === 'b' ? 'Escape' : null;
-  if (mode === 'playing' && !summary && !offers) return button === 'start' ? 'Escape' : null;
+  if (mode === 'playing' && !summary && !offers) {
+    // Y во время обучения пропускает его.
+    if (button === 'y' && tutorial) return 'Enter';
+    return button === 'start' ? 'Escape' : null;
+  }
   if (offers) return PAD_CARD_KEYS[button] ?? null;
   if (button === 'start') return mode === 'paused' ? 'Escape' : mode === 'menu' ? 'Enter' : null;
   if (button === 'x') return mode === 'paused' ? 'KeyM' : mode === 'menu' || mode === 'shop' ? 'KeyB' : null;
@@ -411,6 +439,7 @@ function pickCard(index) {
   }
   pendingLevels -= 1;
   offers = null;
+  tutorial?.add('upgrades');
   if (pendingLevels > 0) openChoice();
 }
 
@@ -467,6 +496,8 @@ function startRun(next = null) {
   challenge = next;
   if (challenge) setLocation(LOCATIONS[challenge.locationId]);
   newRun();
+  // Пока обучение не пройдено, каждый новый забег начинает его заново.
+  tutorial = tutorialPending ? new Tutorial() : null;
   mode = 'playing';
   audio.play('start');
 }
@@ -616,6 +647,9 @@ function onKey(event) {
     startRunFaded();
   } else if (mode === 'paused' && event.code === 'KeyM') {
     menuFaded();
+  } else if (mode === 'playing' && event.code === 'Enter' && tutorial?.canSkip) {
+    finishTutorial();
+    audio.play('pick');
   }
 }
 
@@ -857,8 +891,11 @@ function update(dt) {
   if (mode !== 'playing' || summary || offers) return;
 
   elapsed += dt;
+  const fromX = player.x;
+  const fromY = player.y;
   player.update(dt, input, world, location.surface?.grip);
   collideBody(player, obstacleGrid);
+  tutorial?.add('distance', Math.hypot(player.x - fromX, player.y - fromY));
   profiler.lap('ИГРОК');
 
   // Когда время локации вышло, выходит босс, а обычные волны прекращаются.
@@ -918,6 +955,7 @@ function update(dt) {
   profiler.lap('ПРЕДМЕТЫ');
 
   kills += killed.length;
+  tutorial?.add('kills', killed.length);
   for (const enemy of killed) killsByType[enemy.type.id] = (killsByType[enemy.type.id] ?? 0) + 1;
   if (killed.length > 0) {
     audio.play('kill');
@@ -933,6 +971,7 @@ function update(dt) {
 
   const xpGained = updateGems(gems, player, dt);
   if (xpGained > 0) audio.play('gem');
+  tutorial?.add('xp', xpGained);
   const levelsGained = player.gainXp(xpGained);
   if (levelsGained > 0) audio.play('levelUp');
   for (let i = 0; i < levelsGained; i += 1) {
@@ -948,6 +987,7 @@ function update(dt) {
   effects.update(dt);
 
   camera.follow(player, dt);
+  if (tutorial?.update(dt)) finishTutorial();
   profiler.lap('УБОРКА');
 
   if (!player.alive) {
@@ -1037,7 +1077,7 @@ function render() {
   } else if (mode === 'settings') {
     if (settingsReturn === 'paused') drawHud();
     else drawMenu();
-    drawSettingsScreen(ctx, canvas, settings, settingsSelected, rebinding, settingsNotice);
+    drawSettingsScreen(ctx, canvas, settings, settingsSelected, rebinding, settingsNotice, tutorialPending);
   } else {
     drawHud();
     if (mode === 'paused') drawPauseScreen(ctx, canvas);
@@ -1150,6 +1190,7 @@ function drawHud() {
   }
 
   drawMinimap();
+  if (tutorial && mode === 'playing' && !summary && !offers) drawTutorialHint(ctx, canvas, tutorial, settings.bindings);
   if (summary) drawSummaryScreen(ctx, canvas, summary);
   if (offers) {
     drawUpgradeScreen(ctx, canvas, {

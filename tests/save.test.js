@@ -20,6 +20,7 @@ describe('единое сохранение', () => {
       settings: null,
       nick: null,
       lang: null,
+      tutorial: null,
     });
   });
 

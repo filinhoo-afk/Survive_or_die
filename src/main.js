@@ -47,7 +47,7 @@ import { addGold, applyMeta, buy, loadMeta, META_UPGRADES, runGold } from './sys
 import { drawShopScreen, shopRowAt } from './ui/shopScreen.js';
 import { drawSummaryScreen } from './ui/summaryScreen.js';
 import { formatTime } from './ui/format.js';
-import { drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
+import { MENU_HERO_Y, drawMenuScreen, drawPauseScreen } from './ui/menuScreens.js';
 import { createTransition } from './ui/transition.js';
 import { atlas } from './art/index.js';
 import { Animator } from './gfx/animator.js';
@@ -1395,7 +1395,7 @@ function drawMenu() {
     total: ACHIEVEMENTS.length,
   });
   menuHeroes.forEach((hero, i) => {
-    hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), 150, { scale: 4 });
+    hero.draw(ctx, canvas.width / 2 + (i === 0 ? -40 : 40), MENU_HERO_Y, { scale: 4 });
   });
 }
 

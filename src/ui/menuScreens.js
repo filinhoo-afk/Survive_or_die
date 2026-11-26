@@ -69,7 +69,14 @@ const ONLINE_LABELS = {
   error: { key: 'menu.online.error', color: C.danger },
 };
 
-/** Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком. */
+/** Верх заголовка меню и опора героев над ним (их рисует main.js). */
+const TITLE_Y = 154;
+export const MENU_HERO_Y = 134;
+
+/**
+ * Главное меню. Герои рисуются в main.js поверх — для них оставлено место над заголовком.
+ * Высоты подобраны так, что самая длинная рамка (с рекордом) кончается выше строки «начать».
+ */
 export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = null, online = 'off', nick = '', daily = null, achievements = null) {
   veil(ctx, canvas, 0.7);
   const cx = canvas.width / 2;
@@ -96,10 +103,10 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
   const location = list[selected];
   const open = selected === 0 || cleared.has(list[selected - 1].id);
 
-  drawText(ctx, 'SURVIVE', cx, 170, { scale: 8, align: 'center', color: C.title });
-  drawText(ctx, 'OR DIE', cx, 170 + textHeight(8) + 8, { scale: 8, align: 'center', color: C.danger });
+  drawText(ctx, 'SURVIVE', cx, TITLE_Y, { scale: 8, align: 'center', color: C.title });
+  drawText(ctx, 'OR DIE', cx, TITLE_Y + textHeight(8) + 8, { scale: 8, align: 'center', color: C.danger });
 
-  const mapTop = 170 + (textHeight(8) + 8) * 2 + 14;
+  const mapTop = TITLE_Y + (textHeight(8) + 8) * 2 + 14;
   drawCampaignMap(ctx, canvas, mapTop, campaign);
 
   const status = open
@@ -118,7 +125,7 @@ export function drawMenuScreen(ctx, canvas, record, campaign, gold = 0, hero = n
       color: C.record,
     });
   }
-  drawHints(ctx, canvas, mapTop + 40 + 22, lines);
+  drawHints(ctx, canvas, mapTop + 40 + 16, lines);
 
   if (blink()) {
     drawText(ctx, open ? t('menu.start') : t('menu.locked'), cx, canvas.height - 24, {

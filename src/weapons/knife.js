@@ -1,3 +1,4 @@
+import { BALANCE, weaponLevels } from '../balance/index.js';
 import { spawnProjectile } from '../entities/projectile.js';
 import { localize, localizeLevels } from '../i18n/index.js';
 
@@ -9,28 +10,9 @@ export const knife = {
   id: 'knife',
   color: '#e6f1ff',
   icon: 'knife',
-  base: {
-    cooldown: 0.9,
-    damage: 14,
-    speed: 640,
-    lifetime: 0.6,
-    count: 1,
-    pierce: 2,
-    /** Угол между ножами в веере, радианы. */
-    spread: 0.2,
-  },
-  levels: [
-    { show: 'count', apply: (s) => { s.count += 1; } },
-    { show: 'damage', apply: (s) => { s.damage *= 1.4; } },
-    {
-      show: 'count',
-      apply: (s) => {
-        s.count += 1;
-        s.pierce += 1;
-      },
-    },
-    { show: 'cooldown', apply: (s) => { s.cooldown *= 0.7; } },
-  ],
+  /** Характеристики и уровни — src/balance/weapons.json. */
+  base: BALANCE.weapons.weapons.knife.base,
+  levels: weaponLevels(BALANCE.weapons.weapons.knife.levels),
 
   // Нож бросается всегда, даже без врагов рядом: игрок целится сам.
   fire(stats, { player, projectiles }, weapon) {

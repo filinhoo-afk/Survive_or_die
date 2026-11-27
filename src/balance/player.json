@@ -1,0 +1,6 @@
+{
+  "hero": { "radius": 14, "speed": 230, "maxHp": 100, "invulnerability": 0.8 },
+  "xp": { "base": 5, "step": 5, "magnetRadius": 110, "pullAcceleration": 1400, "maxPullSpeed": 900 },
+  "crit": { "chance": 0.1, "multiplier": 2 },
+  "maxWeapons": 6
+}

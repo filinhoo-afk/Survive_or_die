@@ -2,16 +2,17 @@
  * Подбираемый предмет: аптечка, магнит или бомба. Лежит на земле, пока герой
  * не подойдёт; в последние секунды мигает и исчезает. Рисуется прямоугольниками.
  */
+import { BALANCE } from '../balance/index.js';
+
 export const PICKUP_KINDS = {
   heal: { color: '#f2786a' },
   magnet: { color: '#7aa2ff' },
   bomb: { color: '#ffb347' },
 };
 
-const LIFETIME = 25;
+const { lifetime: LIFETIME, reach: PICKUP_RADIUS } = BALANCE.items.pickups;
 const BLINK_FROM = 5;
 const PIXEL = 3;
-const PICKUP_RADIUS = 18;
 
 export class Pickup {
   constructor(x, y, kind) {

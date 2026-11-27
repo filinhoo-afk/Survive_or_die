@@ -1,3 +1,4 @@
+import { BALANCE, weaponLevels } from '../balance/index.js';
 import { spawnProjectile } from '../entities/projectile.js';
 import { nearestEnemies } from '../systems/targeting.js';
 import { localize, localizeLevels } from '../i18n/index.js';
@@ -7,20 +8,9 @@ export const cannon = {
   id: 'cannon',
   color: '#9ad8ff',
   icon: 'bullet',
-  base: {
-    cooldown: 0.55,
-    damage: 20,
-    range: 430,
-    speed: 540,
-    count: 1,
-    pierce: 0,
-  },
-  levels: [
-    { show: 'damage', apply: (s) => { s.damage *= 1.25; } },
-    { show: 'count', apply: (s) => { s.count += 1; } },
-    { show: 'cooldown', apply: (s) => { s.cooldown *= 0.8; } },
-    { show: 'pierce', apply: (s) => { s.pierce += 1; } },
-  ],
+  /** Характеристики и уровни — src/balance/weapons.json. */
+  base: BALANCE.weapons.weapons.cannon.base,
+  levels: weaponLevels(BALANCE.weapons.weapons.cannon.levels),
 
   fire(stats, { player, enemyGrid, projectiles }, weapon) {
     if (!player.alive) return false;

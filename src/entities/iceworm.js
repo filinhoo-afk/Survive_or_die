@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
 import { spawnEnemyShot } from './enemyShot.js';
@@ -13,33 +14,10 @@ import { random } from '../systems/rng.js';
  *   spikes    — сколько ещё ледяных шипов бьёт вокруг игрока вслед за главным ударом;
  *   spike     — радиус и урон шипа;
  *   ring      — снарядов-осколков при выныривании (0 — без осколков).
+ *
+ * Числа лежат в src/balance/bosses.json.
  */
-const PHASES = [
-  {
-    until: 0.5,
-    speed: 50,
-    surface: 4.5,
-    dive: 0.5,
-    telegraph: 1.4,
-    strike: { radius: 90, damage: 26 },
-    spikes: 0,
-    spike: null,
-    ring: 0,
-    shot: null,
-  },
-  {
-    until: 0,
-    speed: 80,
-    surface: 3,
-    dive: 0.4,
-    telegraph: 1.05,
-    strike: { radius: 95, damage: 30 },
-    spikes: 4,
-    spike: { radius: 55, damage: 18 },
-    ring: 10,
-    shot: { damage: 12, speed: 210, radius: 7, lifetime: 3.5 },
-  },
-];
+const PHASES = BALANCE.bosses.iceworm.phases;
 
 /** Секунд, пока он выбирается из-под льда. */
 const EMERGE_TIME = 0.5;

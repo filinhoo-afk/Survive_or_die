@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
 import { spawnEnemyShot } from './enemyShot.js';
@@ -10,27 +11,10 @@ import { random } from '../systems/rng.js';
  *   summon   — призыв: сколько призраков, пауза между призывами, секунд свечения;
  *   teleport — пауза между прыжками и расстояние, на которое он выходит от игрока;
  *   ring     — снарядов в кольце при появлении после прыжка (0 — без кольца).
+ *
+ * Числа лежат в src/balance/bosses.json.
  */
-const PHASES = [
-  {
-    until: 0.5,
-    speed: 70,
-    keep: 260,
-    summon: { count: 4, cooldown: 6, windup: 0.9 },
-    teleport: { cooldown: 7, distance: 300 },
-    ring: 0,
-    shot: null,
-  },
-  {
-    until: 0,
-    speed: 95,
-    keep: 220,
-    summon: { count: 6, cooldown: 4.5, windup: 0.7 },
-    teleport: { cooldown: 4.5, distance: 260 },
-    ring: 8,
-    shot: { damage: 12, speed: 200, radius: 7, lifetime: 4 },
-  },
-];
+const PHASES = BALANCE.bosses.necromancer.phases;
 
 /** Секунд, пока он тает перед прыжком и проявляется после. */
 const VANISH_TIME = 0.5;
@@ -38,7 +22,7 @@ const APPEAR_TIME = 0.35;
 /** Радиус, на котором появляются призванные призраки. */
 const SUMMON_RADIUS = 70;
 /** Призыв пропускается, если на карте и так слишком людно. */
-const MAX_ENEMIES = 70;
+const MAX_ENEMIES = BALANCE.bosses.necromancer.summonLimit;
 
 /** Некромант: не лезет в ближний бой, зато зовёт призраков и пропадает с места. */
 export class Necromancer extends Enemy {

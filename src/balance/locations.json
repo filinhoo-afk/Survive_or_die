@@ -1,0 +1,7 @@
+{
+  "wasteland": { "duration": null, "enemies": ["grunt", "swarm", "tank", "shooter"] },
+  "forest": { "duration": 480, "enemies": ["wolf", "grunt", "treant", "shooter"] },
+  "ruins": { "duration": 480, "enemies": ["ghost", "grunt", "shooter", "wraith", "tank"] },
+  "glacier": { "duration": 480, "enemies": ["wolf", "grunt", "swarm", "shooter", "tank"] },
+  "abyss": { "duration": 600, "enemies": ["grunt", "wolf", "ghost", "swarm", "shooter", "treant", "wraith", "tank"] }
+}

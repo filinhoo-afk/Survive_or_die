@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 
 /**
@@ -7,8 +8,8 @@ import { localize } from '../i18n/index.js';
  */
 export const RUINS = {
   id: 'ruins',
-  /** Секунд до босса: восемь минут. */
-  duration: 480,
+  /** Секунд до босса и кто тут водится — src/balance/locations.json. */
+  ...BALANCE.locations.ruins,
   world: { width: 3200, height: 2000 },
   colors: {
     outside: '#07060b',
@@ -16,7 +17,6 @@ export const RUINS = {
   },
   /** Босс, который выходит, когда истекает duration. */
   boss: 'necromancer',
-  enemies: ['ghost', 'grunt', 'shooter', 'wraith', 'tank'],
   obstacles: {
     count: 28,
     seed: 36,

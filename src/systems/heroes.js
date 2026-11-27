@@ -3,34 +3,17 @@
  * Выбор запоминается в единой записи сохранения (save.js); нет записи — первый.
  */
 
+import { BALANCE, applyChange } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 import { patchSave, readSave } from './save.js';
 
-export const HEROES = [
-  { id: 'gunner', weapon: 'cannon', color: '#ffd65a' },
-  {
-    id: 'thrower',
-   
-    weapon: 'knife',
-   
-    color: '#8fd3ff',
-    apply: (p) => {
-      p.speed *= 1.1;
-      p.maxHp -= 15;
-    },
-  },
-  {
-    id: 'warden',
-   
-    weapon: 'orbit',
-   
-    color: '#5dcaa5',
-    apply: (p) => {
-      p.maxHp += 30;
-      p.speed *= 0.92;
-    },
-  },
-];
+const COLORS = { gunner: '#ffd65a', thrower: '#8fd3ff', warden: '#5dcaa5' };
+
+/** Порядок — как в меню; оружие и уклон в характеристиках — src/balance/heroes.json. */
+export const HEROES = Object.entries(COLORS).map(([id, color]) => {
+  const { weapon, ...change } = BALANCE.heroes[id];
+  return { id, weapon, color, apply: (player) => applyChange(player, change) };
+});
 
 for (const hero of HEROES) localize(hero, `hero.${hero.id}`, ['title', 'desc']);
 
@@ -45,6 +28,6 @@ export function saveHeroIndex(index) {
 
 /** Применяет черты героя к свежему игроку (до мета-бонусов, которые лечат до максимума). */
 export function applyHero(hero, player) {
-  hero.apply?.(player);
+  hero.apply(player);
   player.hp = player.maxHp;
 }

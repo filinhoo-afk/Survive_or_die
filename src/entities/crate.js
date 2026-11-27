@@ -2,6 +2,8 @@
  * Разрушаемый ящик: стоит на карте, ломается от снарядов героя
  * и оставляет после себя предмет или кристалл.
  */
+import { BALANCE } from '../balance/index.js';
+
 const PIXEL = 3;
 
 export class Crate {
@@ -9,7 +11,7 @@ export class Crate {
     this.x = x;
     this.y = y;
     this.radius = 16;
-    this.maxHp = 3;
+    this.maxHp = BALANCE.items.crates.hp;
     this.hp = this.maxHp;
     this.flash = 0;
   }

@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { localize, t } from '../i18n/index.js';
 import { EVOLUTIONS, WEAPONS } from '../weapons/index.js';
 import { random as rand } from './rng.js';
@@ -5,15 +6,14 @@ import { random as rand } from './rng.js';
 /**
  * Пассивные улучшения игрока. Каждое описано через get / next / set:
  * одна запись и применяет улучшение, и показывает «было → станет».
+ * Потолок ранга и прибавка за ранг — в src/balance/upgrades.json.
  */
-export const PASSIVES = [
+const PASSIVE_LIST = [
   {
     id: 'speed',
     color: '#7ee787',
     icon: 'speed',
-    maxRank: 5,
     get: (player) => player.speed,
-    next: (value) => value * 1.1,
     set: (player, value) => {
       player.speed = value;
     },
@@ -23,12 +23,12 @@ export const PASSIVES = [
     id: 'vitality',
     color: '#f2786a',
     icon: 'heart',
-    maxRank: 5,
     get: (player) => player.maxHp,
-    next: (value) => value + 20,
     set: (player, value) => {
+      // Прибавка к запасу здоровья сразу и лечит на столько же.
+      const gain = value - player.maxHp;
       player.maxHp = value;
-      player.hp = Math.min(value, player.hp + 20);
+      player.hp = Math.min(value, player.hp + gain);
     },
     format: (value) => `${Math.round(value)}`,
   },
@@ -36,9 +36,7 @@ export const PASSIVES = [
     id: 'might',
     color: '#f0997b',
     icon: 'might',
-    maxRank: 5,
     get: (player) => player.mods.damage,
-    next: (value) => value + 0.1,
     set: (player, value) => {
       player.mods.damage = value;
     },
@@ -48,9 +46,7 @@ export const PASSIVES = [
     id: 'haste',
     color: '#f2c14e',
     icon: 'rate',
-    maxRank: 5,
     get: (player) => player.mods.cooldown,
-    next: (value) => value - 0.08,
     set: (player, value) => {
       player.mods.cooldown = value;
     },
@@ -60,9 +56,7 @@ export const PASSIVES = [
     id: 'area',
     color: '#5dcaa5',
     icon: 'area',
-    maxRank: 5,
     get: (player) => player.mods.area,
-    next: (value) => value + 0.1,
     set: (player, value) => {
       player.mods.area = value;
     },
@@ -72,9 +66,7 @@ export const PASSIVES = [
     id: 'regen',
     color: '#97c459',
     icon: 'regen',
-    maxRank: 5,
     get: (player) => player.regen,
-    next: (value) => value + 0.4,
     set: (player, value) => {
       player.regen = value;
     },
@@ -84,9 +76,7 @@ export const PASSIVES = [
     id: 'armor',
     color: '#b4b2a9',
     icon: 'armor',
-    maxRank: 5,
     get: (player) => player.armor,
-    next: (value) => value + 1,
     set: (player, value) => {
       player.armor = value;
     },
@@ -96,9 +86,7 @@ export const PASSIVES = [
     id: 'magnet',
     color: '#a78bfa',
     icon: 'magnet',
-    maxRank: 5,
     get: (player) => player.magnetRadius,
-    next: (value) => value * 1.35,
     set: (player, value) => {
       player.magnetRadius = value;
     },
@@ -106,14 +94,15 @@ export const PASSIVES = [
   },
 ];
 
+export const PASSIVES = PASSIVE_LIST.map((passive) => {
+  const { maxRank, mul, add } = BALANCE.upgrades.passives[passive.id];
+  return { ...passive, maxRank, next: (value) => (mul === undefined ? value + add : value * mul) };
+});
+
 for (const passive of PASSIVES) localize(passive, `passive.${passive.id}`, ['title', 'text']);
 
 /** Относительные шансы карточек попасть в выбор. */
-const CARD_WEIGHT = {
-  newWeapon: 3,
-  weaponLevel: 3,
-  passive: 1,
-};
+const CARD_WEIGHT = BALANCE.upgrades.cardWeight;
 
 /** Как показывать на карточке характеристику оружия. */
 const STAT_FORMAT = {

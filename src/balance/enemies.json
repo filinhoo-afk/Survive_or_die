@@ -1,0 +1,21 @@
+{
+  "knockback": 9,
+  "shot": { "radius": 6, "speed": 240, "lifetime": 3, "damage": 10 },
+  "types": {
+    "grunt":       { "hp": 40,   "speed": 105, "damage": 12, "radius": 13, "xp": 1,   "from": 0,  "weight": 6,   "pack": 1, "mass": 1,   "knockbackResist": 0,    "wobble": 0 },
+    "swarm":       { "hp": 8,    "speed": 175, "damage": 5,  "radius": 8,  "xp": 1,   "from": 20, "weight": 2,   "pack": 5, "mass": 0.5, "knockbackResist": 0,    "wobble": 0.5 },
+    "tank":        { "hp": 160,  "speed": 55,  "damage": 25, "radius": 24, "xp": 5,   "from": 60, "weight": 1,   "pack": 1, "mass": 4,   "knockbackResist": 0.85, "wobble": 0 },
+    "wolf":        { "hp": 30,   "speed": 150, "damage": 10, "radius": 12, "xp": 2,   "from": 0,  "weight": 5,   "pack": 3, "mass": 0.8, "knockbackResist": 0,    "wobble": 0.25 },
+    "treant":      { "hp": 220,  "speed": 48,  "damage": 28, "radius": 22, "xp": 6,   "from": 75, "weight": 1,   "pack": 1, "mass": 4,   "knockbackResist": 0.9,  "wobble": 0 },
+    "shooter":     {
+      "hp": 30, "speed": 85, "damage": 8, "radius": 12, "xp": 3, "from": 40, "weight": 1.5, "pack": 1, "mass": 1, "knockbackResist": 0, "wobble": 0,
+      "ranged": { "keepDistance": 260, "cooldown": 2.2, "windup": 0.45, "damage": 10, "speed": 240 }
+    },
+    "ghost":       { "hp": 26,   "speed": 100, "damage": 9,  "radius": 12, "xp": 2,   "from": 0,  "weight": 5,   "pack": 2, "mass": 0.6, "knockbackResist": 0,    "wobble": 0.35 },
+    "wraith":      { "hp": 110,  "speed": 80,  "damage": 18, "radius": 18, "xp": 5,   "from": 70, "weight": 1.5, "pack": 1, "mass": 2,   "knockbackResist": 0.5,  "wobble": 0.2 },
+    "guardian":    { "hp": 2600, "speed": 55,  "damage": 35, "radius": 48, "xp": 60,  "mass": 30, "knockbackResist": 0.98 },
+    "necromancer": { "hp": 3000, "speed": 70,  "damage": 30, "radius": 34, "xp": 80,  "mass": 30, "knockbackResist": 0.98 },
+    "iceworm":     { "hp": 3400, "speed": 50,  "damage": 30, "radius": 44, "xp": 100, "mass": 30, "knockbackResist": 0.98 },
+    "abyssal":     { "hp": 5000, "speed": 60,  "damage": 35, "radius": 46, "xp": 200, "mass": 30, "knockbackResist": 0.98 }
+  }
+}

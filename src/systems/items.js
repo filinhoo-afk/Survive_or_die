@@ -1,20 +1,12 @@
+import { BALANCE } from '../balance/index.js';
 import { Crate } from '../entities/crate.js';
 import { Pickup } from '../entities/pickup.js';
 import { random } from './rng.js';
 
-const CRATE_COUNT = 16;
-const BOMB_DAMAGE = 80;
-const HEAL_RATIO = 0.3;
-/** Шанс предмета из убитого врага — редкий, чтобы ящики оставались интересными. */
-const ENEMY_DROP = 0.015;
+const { crates: CRATES, pickups: PICKUPS, enemyDropChance, loot } = BALANCE.items;
 
 /** Что выпадает из ящика: вид и вес. */
-const CRATE_LOOT = [
-  ['heal', 4],
-  ['magnet', 3],
-  ['bomb', 3],
-  ['gem', 2],
-];
+const CRATE_LOOT = Object.entries(loot);
 
 function rollLoot(table) {
   const total = table.reduce((sum, [, w]) => sum + w, 0);
@@ -29,7 +21,7 @@ function rollLoot(table) {
 /** Ящики по миру: не у краёв, не на старте и не внутри препятствий. */
 export function buildCrates(world, obstacles) {
   const crates = [];
-  for (let attempt = 0; attempt < CRATE_COUNT * 30 && crates.length < CRATE_COUNT; attempt += 1) {
+  for (let attempt = 0; attempt < CRATES.count * 30 && crates.length < CRATES.count; attempt += 1) {
     const x = 120 + random() * (world.width - 240);
     const y = 120 + random() * (world.height - 240);
     if (Math.hypot(x - world.width / 2, y - world.height / 2) < 220) continue;
@@ -76,7 +68,7 @@ export function crateLoot() {
 
 /** Иногда предмет выпадает и из врага. */
 export function enemyDrop() {
-  return random() < ENEMY_DROP ? rollLoot(CRATE_LOOT.filter(([k]) => k !== 'gem')) : null;
+  return random() < enemyDropChance ? rollLoot(CRATE_LOOT.filter(([k]) => k !== 'gem')) : null;
 }
 
 /** Награда «богатой» элиты: всегда предмет. */
@@ -92,13 +84,13 @@ export function spawnPickup(pickups, x, y, kind) {
 export function applyPickup(pickup, { player, gems, enemies, boss }) {
   const killed = [];
   if (pickup.kind === 'heal') {
-    player.hp = Math.min(player.maxHp, player.hp + player.maxHp * HEAL_RATIO);
+    player.hp = Math.min(player.maxHp, player.hp + player.maxHp * PICKUPS.healRatio);
   } else if (pickup.kind === 'magnet') {
     for (const gem of gems) gem.pulled = true;
   } else {
     for (const enemy of enemies) {
       if (enemy === boss || !enemy.alive || enemy.underground) continue;
-      if (enemy.takeHit(BOMB_DAMAGE, 0, 0)) killed.push(enemy);
+      if (enemy.takeHit(PICKUPS.bombDamage, 0, 0)) killed.push(enemy);
     }
   }
   return killed;

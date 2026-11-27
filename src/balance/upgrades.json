@@ -1,0 +1,13 @@
+{
+  "cardWeight": { "newWeapon": 3, "weaponLevel": 3, "passive": 1 },
+  "passives": {
+    "speed": { "maxRank": 5, "mul": 1.1 },
+    "vitality": { "maxRank": 5, "add": 20 },
+    "might": { "maxRank": 5, "add": 0.1 },
+    "haste": { "maxRank": 5, "add": -0.08 },
+    "area": { "maxRank": 5, "add": 0.1 },
+    "regen": { "maxRank": 5, "add": 0.4 },
+    "armor": { "maxRank": 5, "add": 1 },
+    "magnet": { "maxRank": 5, "mul": 1.35 }
+  }
+}

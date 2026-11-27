@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 
 /**
@@ -7,15 +8,14 @@ import { localize } from '../i18n/index.js';
  */
 export const ABYSS = {
   id: 'abyss',
-  /** Секунд до финального босса: десять минут. */
-  duration: 600,
+  /** Секунд до босса и кто тут водится — src/balance/locations.json. */
+  ...BALANCE.locations.abyss,
   world: { width: 3200, height: 2000 },
   colors: {
     outside: '#050309',
     border: '#7a3fb0',
   },
   boss: 'abyssal',
-  enemies: ['grunt', 'wolf', 'ghost', 'swarm', 'shooter', 'treant', 'wraith', 'tank'],
   obstacles: {
     count: 55,
     seed: 40,

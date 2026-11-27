@@ -1,0 +1,13 @@
+{
+  "interval": 5,
+  "waveSize": 3,
+  "maxEnemies": 60,
+  "margin": 80,
+  "ramp": {
+    "waveSizeEvery": 45,
+    "intervalShrinkPerMinute": 0.4,
+    "minInterval": 2,
+    "maxEnemiesPerMinute": 6,
+    "hpPerMinute": 0.15
+  }
+}

@@ -1,3 +1,4 @@
+import { BALANCE, weaponLevels } from '../balance/index.js';
 import { CONFIG } from '../config.js';
 import { localize, localizeLevels } from '../i18n/index.js';
 
@@ -10,26 +11,9 @@ export const aura = {
   color: '#7ee787',
   icon: 'aura',
   layer: 'under',
-  base: {
-    radius: 75,
-    damage: 6,
-    /** Секунд между импульсами. */
-    cooldown: 0.4,
-    /** Отброс слабее обычного: иначе аура выталкивает толпу из себя. */
-    knockback: 0.25,
-  },
-  levels: [
-    { show: 'radius', apply: (s) => { s.radius *= 1.2; } },
-    { show: 'damage', apply: (s) => { s.damage *= 1.5; } },
-    {
-      show: 'radius',
-      apply: (s) => {
-        s.radius *= 1.2;
-        s.cooldown *= 0.75;
-      },
-    },
-    { show: 'damage', apply: (s) => { s.damage *= 1.5; } },
-  ],
+  /** Характеристики и уровни — src/balance/weapons.json. */
+  base: BALANCE.weapons.weapons.aura.base,
+  levels: weaponLevels(BALANCE.weapons.weapons.aura.levels),
 
   createState: () => ({ pulse: 0, time: 0 }),
 

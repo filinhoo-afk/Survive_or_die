@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 
 /**
@@ -6,8 +7,8 @@ import { localize } from '../i18n/index.js';
  */
 export const GLACIER = {
   id: 'glacier',
-  /** Секунд до босса: восемь минут. */
-  duration: 480,
+  /** Секунд до босса и кто тут водится — src/balance/locations.json. */
+  ...BALANCE.locations.glacier,
   world: { width: 3200, height: 2000 },
   colors: {
     outside: '#070b12',
@@ -15,7 +16,6 @@ export const GLACIER = {
   },
   /** Босс, который выходит, когда истекает duration. */
   boss: 'iceworm',
-  enemies: ['wolf', 'grunt', 'swarm', 'shooter', 'tank'],
   /** Лёд: grip — как быстро скорость догоняет желаемую (1/с); у обычной земли сцепление мгновенное. */
   surface: { grip: 2.4 },
   /** Метель: обзор сжимается до radius и «дышит» порывами на gust каждые period секунд. */

@@ -3,32 +3,22 @@
  *
  * Элита крупнее, живучее и щедрее на опыт; модификатор добавляет свою
  * особенность и цвет ободка под ногами, по которому её видно издалека.
- *   hp, speed, damage, xp — множители к характеристикам типа;
- *   knockbackResist       — добавка к сопротивлению отбросу;
- *   drop                  — гарантированно роняет предмет.
+ * Множители и шанс появления лежат в src/balance/elites.json, здесь — цвета.
  */
+import { BALANCE } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 import { random } from '../systems/rng.js';
 
-export const ELITE = {
-  /** Во сколько раз элита крупнее обычного врага (спрайт округляется до целого пикселя). */
-  size: 1.3,
-  hp: 2.5,
-  xp: 4,
-  /** С какой секунды забега появляются элиты. */
-  from: 120,
-  /** Шанс на каждого нового врага: стартовый, прирост за минуту и потолок. */
-  chance: 0.03,
-  chancePerMinute: 0.01,
-  maxChance: 0.12,
-};
+export const ELITE = BALANCE.elites.elite;
 
-export const ELITE_MODIFIERS = {
-  armored: { id: 'armored', color: '#9aa6bd', hp: 2, knockbackResist: 0.7 },
-  swift: { id: 'swift', color: '#4cc9f0', speed: 1.5 },
-  brutal: { id: 'brutal', color: '#f2786a', damage: 1.7 },
-  rich: { id: 'rich', color: '#ffd34e', xp: 2, drop: true },
-};
+const MODIFIER_COLORS = { armored: '#9aa6bd', swift: '#4cc9f0', brutal: '#f2786a', rich: '#ffd34e' };
+
+export const ELITE_MODIFIERS = Object.fromEntries(
+  Object.entries(MODIFIER_COLORS).map(([id, color]) => [
+    id,
+    { id, color, ...BALANCE.elites.modifiers[id] },
+  ]),
+);
 
 for (const modifier of Object.values(ELITE_MODIFIERS)) localize(modifier, `elite.${modifier.id}`, ['title']);
 

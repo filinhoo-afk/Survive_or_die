@@ -1,0 +1,6 @@
+{
+  "crates": { "count": 16, "hp": 3, "gemValue": 5 },
+  "pickups": { "lifetime": 25, "reach": 18, "healRatio": 0.3, "bombDamage": 80 },
+  "enemyDropChance": 0.015,
+  "loot": { "heal": 4, "magnet": 3, "bomb": 3, "gem": 2 }
+}

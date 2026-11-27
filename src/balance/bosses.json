@@ -1,0 +1,119 @@
+{
+  "guardian": {
+    "phases": [
+      {
+        "until": 0.5,
+        "speed": 55,
+        "cooldown": 3.2,
+        "windup": 0.8,
+        "shot": { "damage": 12, "speed": 190, "radius": 7, "lifetime": 4 },
+        "ring": 10,
+        "fan": 0
+      },
+      {
+        "until": 0,
+        "speed": 90,
+        "cooldown": 2.1,
+        "windup": 0.55,
+        "shot": { "damage": 14, "speed": 230, "radius": 7, "lifetime": 4 },
+        "ring": 14,
+        "fan": 5,
+        "spread": 0.7
+      }
+    ]
+  },
+  "necromancer": {
+    "summonLimit": 70,
+    "phases": [
+      {
+        "until": 0.5,
+        "speed": 70,
+        "keep": 260,
+        "summon": { "count": 4, "cooldown": 6, "windup": 0.9 },
+        "teleport": { "cooldown": 7, "distance": 300 },
+        "ring": 0,
+        "shot": null
+      },
+      {
+        "until": 0,
+        "speed": 95,
+        "keep": 220,
+        "summon": { "count": 6, "cooldown": 4.5, "windup": 0.7 },
+        "teleport": { "cooldown": 4.5, "distance": 260 },
+        "ring": 8,
+        "shot": { "damage": 12, "speed": 200, "radius": 7, "lifetime": 4 }
+      }
+    ]
+  },
+  "iceworm": {
+    "phases": [
+      {
+        "until": 0.5,
+        "speed": 50,
+        "surface": 4.5,
+        "dive": 0.5,
+        "telegraph": 1.4,
+        "strike": { "radius": 90, "damage": 26 },
+        "spikes": 0,
+        "spike": null,
+        "ring": 0,
+        "shot": null
+      },
+      {
+        "until": 0,
+        "speed": 80,
+        "surface": 3,
+        "dive": 0.4,
+        "telegraph": 1.05,
+        "strike": { "radius": 95, "damage": 30 },
+        "spikes": 4,
+        "spike": { "radius": 55, "damage": 18 },
+        "ring": 10,
+        "shot": { "damage": 12, "speed": 210, "radius": 7, "lifetime": 3.5 }
+      }
+    ]
+  },
+  "abyssal": {
+    "summonLimit": 70,
+    "phases": [
+      {
+        "until": 0.66,
+        "speed": 60,
+        "cooldown": 3,
+        "windup": 0.8,
+        "shot": { "damage": 12, "speed": 190, "radius": 7, "lifetime": 4 },
+        "ring": 12,
+        "fan": 0,
+        "teleport": null,
+        "summon": null,
+        "rifts": null
+      },
+      {
+        "until": 0.33,
+        "speed": 80,
+        "cooldown": 2.6,
+        "windup": 0.65,
+        "shot": { "damage": 13, "speed": 210, "radius": 7, "lifetime": 4 },
+        "ring": 10,
+        "fan": 5,
+        "spread": 0.7,
+        "teleport": { "cooldown": 7, "distance": 280 },
+        "summon": { "type": "wraith", "count": 4 },
+        "rifts": null
+      },
+      {
+        "until": 0,
+        "speed": 95,
+        "cooldown": 2,
+        "windup": 0.5,
+        "shot": { "damage": 14, "speed": 230, "radius": 7, "lifetime": 4 },
+        "ring": 14,
+        "fan": 7,
+        "spread": 0.9,
+        "teleport": { "cooldown": 5.5, "distance": 250 },
+        "summon": { "type": "ghost", "count": 4 },
+        "rifts": { "count": 3, "cooldown": 4.5, "telegraph": 1.1, "radius": 75, "damage": 22 }
+      }
+    ]
+  }
+}

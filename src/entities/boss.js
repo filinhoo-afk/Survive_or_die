@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
 import { spawnEnemyShot } from './enemyShot.js';
@@ -9,28 +10,10 @@ import { spawnEnemyShot } from './enemyShot.js';
  *   ring   — залп по кругу: столько снарядов, равномерно;
  *   fan    — веер в сторону игрока: столько снарядов в раствор `spread`;
  *   windup — сколько секунд страж светится перед залпом.
+ *
+ * Числа лежат в src/balance/bosses.json.
  */
-const PHASES = [
-  {
-    until: 0.5,
-    speed: 55,
-    cooldown: 3.2,
-    windup: 0.8,
-    shot: { damage: 12, speed: 190, radius: 7, lifetime: 4 },
-    ring: 10,
-    fan: 0,
-  },
-  {
-    until: 0,
-    speed: 90,
-    cooldown: 2.1,
-    windup: 0.55,
-    shot: { damage: 14, speed: 230, radius: 7, lifetime: 4 },
-    ring: 14,
-    fan: 5,
-    spread: 0.7,
-  },
-];
+const PHASES = BALANCE.bosses.guardian.phases;
 
 /** Лесной страж: идёт на игрока и бьёт залпами; на половине здоровья звереет. */
 export class Boss extends Enemy {

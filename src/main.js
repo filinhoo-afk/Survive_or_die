@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { BALANCE } from './balance/index.js';
 import { getLanguage, nextLanguage, setLanguage, t } from './i18n/index.js';
 import { loadLanguage, saveLanguage } from './systems/language.js';
 import { createLoop } from './engine/loop.js';
@@ -1001,7 +1002,7 @@ function update(dt) {
     effects.deathBurst(crate.x, crate.y, '#9a6a36', 1);
     audio.play('kill');
     const loot = crateLoot();
-    if (loot === 'gem') gems.push(spawnGem(crate.x, crate.y, 5));
+    if (loot === 'gem') gems.push(spawnGem(crate.x, crate.y, BALANCE.items.crates.gemValue));
     else spawnPickup(pickups, crate.x, crate.y, loot);
   }
   removeBroken(crates);

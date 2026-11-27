@@ -1,17 +1,16 @@
+import { BALANCE } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 
 /** Стартовая локация: тёмная пустошь с травой, камнями и костями. */
 export const WASTELAND = {
   id: 'wasteland',
-  /** Секунд до босса; null — забег бесконечный, босса пока нет. */
-  duration: null,
+  /** Секунд до босса и кто тут водится — src/balance/locations.json. */
+  ...BALANCE.locations.wasteland,
   world: { width: 2880, height: 1800 },
   colors: {
     outside: '#080a10',
     border: '#31405e',
   },
-  /** Какие враги тут водятся — id из enemies/types.js. */
-  enemies: ['grunt', 'swarm', 'tank', 'shooter'],
   /** Препятствия: сколько, как далеко от старта игрока и какие бывают. */
   obstacles: {
     count: 55,

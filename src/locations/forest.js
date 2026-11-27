@@ -1,10 +1,11 @@
+import { BALANCE } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 
 /** Вторая локация: тёмный лес с папоротником, грибами и соснами. */
 export const FOREST = {
   id: 'forest',
-  /** Секунд до босса: восемь минут. */
-  duration: 480,
+  /** Секунд до босса и кто тут водится — src/balance/locations.json. */
+  ...BALANCE.locations.forest,
   world: { width: 3200, height: 2000 },
   colors: {
     outside: '#060b08',
@@ -12,7 +13,6 @@ export const FOREST = {
   },
   /** Босс, который выходит, когда истекает duration. */
   boss: 'guardian',
-  enemies: ['wolf', 'grunt', 'treant', 'shooter'],
   obstacles: {
     count: 90,
     seed: 33,

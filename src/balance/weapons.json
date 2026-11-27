@@ -1,0 +1,63 @@
+{
+  "projectile": { "radius": 5, "speed": 540, "lifetime": 1.4, "damage": 20 },
+  "weapons": {
+    "cannon": {
+      "base": { "cooldown": 0.55, "damage": 20, "range": 430, "speed": 540, "count": 1, "pierce": 0 },
+      "levels": [
+        { "show": "damage", "mul": { "damage": 1.25 } },
+        { "show": "count", "add": { "count": 1 } },
+        { "show": "cooldown", "mul": { "cooldown": 0.8 } },
+        { "show": "pierce", "add": { "pierce": 1 } }
+      ]
+    },
+    "knife": {
+      "base": { "cooldown": 0.9, "damage": 14, "speed": 640, "lifetime": 0.6, "count": 1, "pierce": 2, "spread": 0.2 },
+      "levels": [
+        { "show": "count", "add": { "count": 1 } },
+        { "show": "damage", "mul": { "damage": 1.4 } },
+        { "show": "count", "add": { "count": 1, "pierce": 1 } },
+        { "show": "cooldown", "mul": { "cooldown": 0.7 } }
+      ]
+    },
+    "orbit": {
+      "base": { "count": 2, "damage": 10, "radius": 95, "orbSize": 9, "rotation": 3, "hitInterval": 0.5 },
+      "levels": [
+        { "show": "count", "add": { "count": 1 } },
+        { "show": "damage", "mul": { "damage": 1.4 } },
+        { "show": "radius", "mul": { "radius": 1.2, "rotation": 1.3 } },
+        { "show": "count", "add": { "count": 2 } }
+      ]
+    },
+    "aura": {
+      "base": { "radius": 75, "damage": 6, "cooldown": 0.4, "knockback": 0.25 },
+      "levels": [
+        { "show": "radius", "mul": { "radius": 1.2 } },
+        { "show": "damage", "mul": { "damage": 1.5 } },
+        { "show": "radius", "mul": { "radius": 1.2, "cooldown": 0.75 } },
+        { "show": "damage", "mul": { "damage": 1.5 } }
+      ]
+    }
+  },
+  "evolutions": {
+    "thunder": {
+      "from": "cannon",
+      "requires": "might",
+      "base": { "cooldown": 0.4, "damage": 48, "range": 480, "speed": 620, "count": 3, "pierce": 3, "shotRadius": 7 }
+    },
+    "blades": {
+      "from": "knife",
+      "requires": "haste",
+      "base": { "cooldown": 0.5, "damage": 30, "speed": 680, "lifetime": 0.7, "count": 8, "pierce": 5, "spread": 0.7853981633974483 }
+    },
+    "bastion": {
+      "from": "orbit",
+      "requires": "armor",
+      "base": { "count": 6, "damage": 26, "radius": 120, "orbSize": 13, "rotation": 4.2, "hitInterval": 0.4, "blocksShots": true }
+    },
+    "sanctum": {
+      "from": "aura",
+      "requires": "regen",
+      "base": { "radius": 135, "damage": 24, "cooldown": 0.3, "knockback": 0.35, "heal": 1 }
+    }
+  }
+}

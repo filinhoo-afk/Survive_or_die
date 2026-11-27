@@ -1,3 +1,4 @@
+import { BALANCE, weaponLevels } from '../balance/index.js';
 import { CONFIG } from '../config.js';
 import { atlas } from '../art/index.js';
 import { Animator } from '../gfx/animator.js';
@@ -14,31 +15,9 @@ export const orbit = {
   color: '#5dcaa5',
   icon: 'orbit',
   layer: 'over',
-  base: {
-    count: 2,
-    damage: 10,
-    /**
-     * Расстояние от игрока до центра шара. Заметно больше радиуса ауры (75):
-     * иначе при обоих оружиях их кольца сливаются в одно.
-     */
-    radius: 95,
-    orbSize: 9,
-    /** Радиан в секунду. */
-    rotation: 3,
-    hitInterval: 0.5,
-  },
-  levels: [
-    { show: 'count', apply: (s) => { s.count += 1; } },
-    { show: 'damage', apply: (s) => { s.damage *= 1.4; } },
-    {
-      show: 'radius',
-      apply: (s) => {
-        s.radius *= 1.2;
-        s.rotation *= 1.3;
-      },
-    },
-    { show: 'count', apply: (s) => { s.count += 2; } },
-  ],
+  /** Характеристики и уровни — src/balance/weapons.json. */
+  base: BALANCE.weapons.weapons.orbit.base,
+  levels: weaponLevels(BALANCE.weapons.weapons.orbit.levels),
 
   createState: (definition) => ({
     angle: 0,

@@ -33,7 +33,7 @@ export class Enemy {
     this.damage = Math.round(type.damage * (m.damage ?? 1));
     this.xp = Math.round(type.xp * (this.elite ? ELITE.xp : 1) * (m.xp ?? 1));
     this.color = type.color;
-    this.mass = type.mass * (this.elite ? 2 : 1);
+    this.mass = type.mass * (this.elite ? ELITE.mass : 1);
     this.knockbackResist = Math.min(0.95, type.knockbackResist + (m.knockbackResist ?? 0));
     this.angle = 0;
 

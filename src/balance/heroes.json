@@ -1,0 +1,5 @@
+{
+  "gunner": { "weapon": "cannon" },
+  "thrower": { "weapon": "knife", "mul": { "speed": 1.1 }, "add": { "maxHp": -15 } },
+  "warden": { "weapon": "orbit", "mul": { "speed": 0.92 }, "add": { "maxHp": 30 } }
+}

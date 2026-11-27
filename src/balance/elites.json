@@ -1,0 +1,18 @@
+{
+  "elite": {
+    "size": 1.3,
+    "hp": 2.5,
+    "xp": 4,
+    "mass": 2,
+    "from": 120,
+    "chance": 0.03,
+    "chancePerMinute": 0.01,
+    "maxChance": 0.12
+  },
+  "modifiers": {
+    "armored": { "hp": 2, "knockbackResist": 0.7 },
+    "swift": { "speed": 1.5 },
+    "brutal": { "damage": 1.7 },
+    "rich": { "xp": 2, "drop": true }
+  }
+}

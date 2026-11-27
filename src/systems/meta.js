@@ -3,17 +3,18 @@
  * улучшения, купленные за него. Хранит единое сохранение (save.js).
  */
 
+import { BALANCE } from '../balance/index.js';
 import { localize } from '../i18n/index.js';
 import { patchSave, readSave } from './save.js';
 
-/** Постоянные улучшения: уровень * step даёт бонус, цена растёт с уровнем. */
-export const META_UPGRADES = [
-  { id: 'vitality', max: 5, cost: 40, step: 10 },
-  { id: 'might', max: 5, cost: 60, step: 0.05 },
-  { id: 'swiftness', max: 5, cost: 50, step: 0.04 },
-  { id: 'magnetism', max: 4, cost: 40, step: 0.15 },
-  { id: 'greed', max: 5, cost: 80, step: 0.1 },
-];
+/**
+ * Постоянные улучшения: уровень * step даёт бонус, цена растёт с уровнем.
+ * Здесь порядок строк магазина; числа — в src/balance/meta.json.
+ */
+export const META_UPGRADES = ['vitality', 'might', 'swiftness', 'magnetism', 'greed'].map((id) => ({
+  id,
+  ...BALANCE.meta.upgrades[id],
+}));
 
 for (const upgrade of META_UPGRADES) localize(upgrade, `meta.${upgrade.id}`, ['title', 'desc']);
 
@@ -42,6 +43,11 @@ export function levelOf(meta, id) {
   return meta.levels[id] ?? 0;
 }
 
+/** Накопленный бонус улучшения: купленный уровень на прибавку за уровень. */
+function bonusOf(meta, id) {
+  return levelOf(meta, id) * BALANCE.meta.upgrades[id].step;
+}
+
 /** Цена следующего уровня или null, если улучшение выкуплено до упора. */
 export function priceOf(meta, upgrade) {
   const level = levelOf(meta, upgrade.id);
@@ -64,8 +70,9 @@ export function buy(meta, id) {
 
 /** Золото за забег: за убийства и время, плюс награда за победу над боссом. */
 export function runGold(meta, { kills, time }, victory) {
-  const base = Math.floor(kills / 4 + time / 30) + (victory ? 50 : 0);
-  return Math.floor(base * (1 + levelOf(meta, 'greed') * 0.1));
+  const { killsPerGold, secondsPerGold, victoryBonus } = BALANCE.meta.gold;
+  const base = Math.floor(kills / killsPerGold + time / secondsPerGold) + (victory ? victoryBonus : 0);
+  return Math.floor(base * (1 + bonusOf(meta, 'greed')));
 }
 
 /** Кладёт заработанное в казну и сохраняет. */
@@ -77,10 +84,9 @@ export function addGold(meta, amount) {
 
 /** Применяет купленные улучшения к свежему игроку. */
 export function applyMeta(meta, player) {
-  const bonus = (id) => levelOf(meta, id) * META_UPGRADES.find((u) => u.id === id).step;
-  player.maxHp += bonus('vitality');
+  player.maxHp += bonusOf(meta, 'vitality');
   player.hp = player.maxHp;
-  player.mods.damage *= 1 + bonus('might');
-  player.speed *= 1 + bonus('swiftness');
-  player.magnetRadius *= 1 + bonus('magnetism');
+  player.mods.damage *= 1 + bonusOf(meta, 'might');
+  player.speed *= 1 + bonusOf(meta, 'swiftness');
+  player.magnetRadius *= 1 + bonusOf(meta, 'magnetism');
 }

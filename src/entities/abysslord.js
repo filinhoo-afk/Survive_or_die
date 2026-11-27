@@ -1,3 +1,4 @@
+import { BALANCE } from '../balance/index.js';
 import { ENEMY_TYPES } from '../enemies/types.js';
 import { Enemy } from './enemy.js';
 import { spawnEnemyShot } from './enemyShot.js';
@@ -11,47 +12,10 @@ import { random } from '../systems/rng.js';
  *   teleport          — пауза между прыжками и расстояние от игрока (null — не прыгает);
  *   summon            — кого и сколько призывает при появлении после прыжка;
  *   rifts             — разломы под ногами: сколько, пауза, радиус и урон.
+ *
+ * Числа лежат в src/balance/bosses.json.
  */
-const PHASES = [
-  {
-    until: 0.66,
-    speed: 60,
-    cooldown: 3,
-    windup: 0.8,
-    shot: { damage: 12, speed: 190, radius: 7, lifetime: 4 },
-    ring: 12,
-    fan: 0,
-    teleport: null,
-    summon: null,
-    rifts: null,
-  },
-  {
-    until: 0.33,
-    speed: 80,
-    cooldown: 2.6,
-    windup: 0.65,
-    shot: { damage: 13, speed: 210, radius: 7, lifetime: 4 },
-    ring: 10,
-    fan: 5,
-    spread: 0.7,
-    teleport: { cooldown: 7, distance: 280 },
-    summon: { type: 'wraith', count: 4 },
-    rifts: null,
-  },
-  {
-    until: 0,
-    speed: 95,
-    cooldown: 2,
-    windup: 0.5,
-    shot: { damage: 14, speed: 230, radius: 7, lifetime: 4 },
-    ring: 14,
-    fan: 7,
-    spread: 0.9,
-    teleport: { cooldown: 5.5, distance: 250 },
-    summon: { type: 'ghost', count: 4 },
-    rifts: { count: 3, cooldown: 4.5, telegraph: 1.1, radius: 75, damage: 22 },
-  },
-];
+const PHASES = BALANCE.bosses.abyssal.phases;
 
 /** Секунд, пока он тает перед прыжком и проявляется после. */
 const VANISH_TIME = 0.5;
@@ -59,7 +23,7 @@ const APPEAR_TIME = 0.35;
 /** Секунд, пока след разлома ещё виден после удара. */
 const AFTERMATH = 0.35;
 /** Призыв пропускается, если на карте и так слишком людно. */
-const MAX_ENEMIES = 70;
+const MAX_ENEMIES = BALANCE.bosses.abyssal.summonLimit;
 const SUMMON_RADIUS = 80;
 /** Дальше этого от игрока лишние разломы не открываются. */
 const RIFT_REACH = 240;
